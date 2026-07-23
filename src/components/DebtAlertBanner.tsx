@@ -113,11 +113,11 @@ export const DebtAlertBanner: React.FC<DebtAlertBannerProps> = ({
                       <span className="font-extrabold text-xs tracking-tight">
                         {alert.title}
                       </span>
-                      <span className={`text-[9px] px-1.5 py-0.2 font-bold uppercase rounded border ${badgeBg}`}>
+                      <span className={`text-[9px] px-1.5 py-0.5 font-bold uppercase rounded border ${badgeBg}`}>
                         {isBorrowed ? 'Taken Debt' : 'Lent Money'}
                       </span>
                       {alert.debt.isEmi && (
-                        <span className="text-[9px] px-1.5 py-0.2 bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 font-bold rounded border border-indigo-500/30">
+                        <span className="text-[9px] px-1.5 py-0.5 bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 font-bold rounded border border-indigo-500/30">
                           EMI
                         </span>
                       )}
