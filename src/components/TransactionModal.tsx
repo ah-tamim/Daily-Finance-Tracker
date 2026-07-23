@@ -251,3 +251,4 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
     </div>
   );
 };
+export { TransactionModal };
