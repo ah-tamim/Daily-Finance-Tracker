@@ -130,15 +130,20 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
 
     try {
       setIsSaving(true);
-      await onSave({
+      const txPayload: Omit<Transaction, 'id' | 'userId' | 'monthKey' | 'createdAt'> = {
         date,
         type,
         walletId,
-        targetWalletId: type === 'transfer' ? targetWalletId : undefined,
         category: finalCategory,
-        description,
+        description: description.trim(),
         amount: numAmount,
-      });
+      };
+
+      if (type === 'transfer' && targetWalletId) {
+        txPayload.targetWalletId = targetWalletId;
+      }
+
+      await onSave(txPayload);
       onClose();
     } catch (err: any) {
       console.error('Failed to save transaction:', err);

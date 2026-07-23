@@ -31,6 +31,17 @@ const LOCAL_STORAGE_DEBTS_KEY = 'daily_finance_debts_v3';
 const LOCAL_STORAGE_BUDGETS_KEY = 'daily_finance_budgets_v3';
 const LOCAL_STORAGE_CATEGORIES_KEY = 'daily_finance_categories_v3';
 
+// Helper to strip undefined properties before sending to Firestore (Firestore throws on undefined)
+const removeUndefinedFields = <T extends Record<string, any>>(obj: T): Record<string, any> => {
+  const cleaned: Record<string, any> = {};
+  Object.keys(obj).forEach((key) => {
+    if (obj[key] !== undefined) {
+      cleaned[key] = obj[key];
+    }
+  });
+  return cleaned;
+};
+
 // Get month key helper YYYY-MM
 export const getMonthKey = (dateStr: string): string => {
   if (!dateStr) return new Date().toISOString().slice(0, 7);
@@ -107,10 +118,10 @@ export const subscribeWallets = (
 export const addCustomWallet = async (userId: string, walletData: Omit<Wallet, 'id'>) => {
   if (!userId) throw new Error('User not authenticated');
   const userWalletsRef = collection(db, 'users', userId, 'wallets');
-  const docRef = await addDoc(userWalletsRef, {
+  const docRef = await addDoc(userWalletsRef, removeUndefinedFields({
     ...walletData,
     createdAt: new Date().toISOString(),
-  });
+  }));
   return docRef.id;
 };
 
@@ -169,12 +180,12 @@ export const addTransaction = async (
   if (!userId) throw new Error('User not authenticated');
   const monthKey = getMonthKey(txData.date);
   const txRef = collection(db, 'users', userId, 'transactions');
-  const newTx = {
+  const newTx = removeUndefinedFields({
     ...txData,
     userId,
     monthKey,
     createdAt: Date.now(),
-  };
+  });
   const docRef = await addDoc(txRef, newTx);
   return docRef.id;
 };
@@ -186,7 +197,7 @@ export const updateTransaction = async (
 ) => {
   if (!userId) throw new Error('User not authenticated');
   const docRef = doc(db, 'users', userId, 'transactions', txId);
-  const updates: any = { ...txData };
+  const updates: any = removeUndefinedFields({ ...txData });
   if (txData.date) {
     updates.monthKey = getMonthKey(txData.date);
   }
@@ -303,11 +314,11 @@ export const addDebt = async (
 ) => {
   if (!userId) throw new Error('User not authenticated');
   const debtRef = collection(db, 'users', userId, 'debts');
-  const newDebt = {
+  const newDebt = removeUndefinedFields({
     ...debtData,
     userId,
     createdAt: Date.now(),
-  };
+  });
   const docRef = await addDoc(debtRef, newDebt);
 
   // If user linked a wallet and requested initial money flow transaction
@@ -339,7 +350,7 @@ export const updateDebt = async (
 ) => {
   if (!userId) throw new Error('User not authenticated');
   const docRef = doc(db, 'users', userId, 'debts', debtId);
-  await updateDoc(docRef, debtData);
+  await updateDoc(docRef, removeUndefinedFields(debtData));
 };
 
 export const deleteDebt = async (userId: string, debtId: string) => {
@@ -436,11 +447,11 @@ export const addBudget = async (
 ) => {
   if (!userId) throw new Error('User not authenticated');
   const ref = collection(db, 'users', userId, 'budgets');
-  const newBudget = {
+  const newBudget = removeUndefinedFields({
     ...budgetData,
     userId,
     createdAt: Date.now(),
-  };
+  });
   const docRef = await addDoc(ref, newBudget);
   return docRef.id;
 };
@@ -452,7 +463,7 @@ export const updateBudget = async (
 ) => {
   if (!userId) throw new Error('User not authenticated');
   const docRef = doc(db, 'users', userId, 'budgets', budgetId);
-  await updateDoc(docRef, data);
+  await updateDoc(docRef, removeUndefinedFields(data));
 };
 
 export const deleteBudget = async (userId: string, budgetId: string) => {
