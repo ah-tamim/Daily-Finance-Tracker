@@ -45,7 +45,7 @@ import { SummaryCards } from './components/SummaryCards';
 import { QuickEntryBar } from './components/QuickEntryBar';
 import { WalletList } from './components/WalletList';
 import { WalletDetailModal } from './components/WalletDetailModal';
-import { TransactionModal } from './components/TransactionModal';
+import TransactionModal from './components/TransactionModal';
 import { TransactionHistory } from './components/TransactionHistory';
 import { AnalyticsCharts } from './components/AnalyticsCharts';
 import { AddWalletModal } from './components/AddWalletModal';
