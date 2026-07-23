@@ -35,6 +35,7 @@ interface ProfileModalProps {
   totalBalance: number;
   onOpenThemeModal: () => void;
   onOpenExportModal: () => void;
+  onOpenAuthModal?: () => void;
   currentTheme: ThemeId;
 }
 
@@ -49,6 +50,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
   totalBalance,
   onOpenThemeModal,
   onOpenExportModal,
+  onOpenAuthModal,
   currentTheme,
 }) => {
   const [isEditingName, setIsEditingName] = useState<boolean>(false);
@@ -201,7 +203,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                       ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30' 
                       : 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30'
                   }`}>
-                    {user ? 'Google Auth' : 'Guest Mode'}
+                    {user ? (user.providerData[0]?.providerId === 'password' ? 'Email Auth' : 'Cloud Auth') : 'Guest Mode'}
                   </span>
                 </div>
 
@@ -257,9 +259,11 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
 
               {!user && (
                 <button
-                  onClick={handleGoogleLogin}
-                  disabled={isLoggingIn}
-                  className="shrink-0 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-xl shadow-sm transition flex items-center gap-1.5"
+                  onClick={() => {
+                    onClose();
+                    onOpenAuthModal?.();
+                  }}
+                  className="shrink-0 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-xl shadow-sm transition flex items-center gap-1.5"
                 >
                   <Sparkles className="w-3.5 h-3.5" />
                   <span>Sign In</span>
@@ -392,12 +396,14 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                 </button>
               ) : (
                 <button
-                  onClick={handleGoogleLogin}
-                  disabled={isLoggingIn}
-                  className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold shadow-md transition flex items-center justify-center gap-2"
+                  onClick={() => {
+                    onClose();
+                    onOpenAuthModal?.();
+                  }}
+                  className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-md transition flex items-center justify-center gap-2"
                 >
                   <UserIcon className="w-4 h-4" />
-                  <span>Connect with Google Account</span>
+                  <span>Sign In / Register Account</span>
                 </button>
               )}
             </div>

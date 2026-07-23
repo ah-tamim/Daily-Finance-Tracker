@@ -2,8 +2,12 @@ import { initializeApp, getApps, getApp } from 'firebase/app';
 import { 
   getAuth, 
   GoogleAuthProvider, 
+  GithubAuthProvider,
   signInWithPopup, 
   signInWithRedirect, 
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signInAnonymously,
   signOut, 
   onAuthStateChanged,
   updateProfile,
@@ -37,11 +41,49 @@ try {
 export const auth = getAuth(app);
 export { db };
 
-// Google Auth Provider
+// Auth Providers
 export const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({ prompt: 'select_account' });
 
+export const githubProvider = new GithubAuthProvider();
+
 // Auth Helper Functions
+export const loginWithEmail = async (email: string, pass: string): Promise<User | null> => {
+  const result = await signInWithEmailAndPassword(auth, email, pass);
+  return result.user;
+};
+
+export const registerWithEmail = async (email: string, pass: string, displayName?: string): Promise<User | null> => {
+  const result = await createUserWithEmailAndPassword(auth, email, pass);
+  if (result.user && displayName) {
+    await updateProfile(result.user, { displayName });
+  }
+  return result.user;
+};
+
+export const loginWithGithub = async (): Promise<User | null> => {
+  try {
+    const result = await signInWithPopup(auth, githubProvider);
+    return result.user;
+  } catch (error: any) {
+    if (error?.code === 'auth/popup-closed-by-user') {
+      console.info('Sign in popup was closed by user.');
+      return null;
+    }
+    if (error?.code === 'auth/operation-not-allowed') {
+      throw error;
+    }
+    console.warn('GitHub Popup login failed, trying redirect...', error);
+    try {
+      await signInWithRedirect(auth, githubProvider);
+      return null;
+    } catch (redirectErr: any) {
+      console.error('GitHub Redirect sign in error:', redirectErr);
+      throw redirectErr;
+    }
+  }
+};
+
 export const loginWithGoogle = async (): Promise<User | null> => {
   try {
     const result = await signInWithPopup(auth, googleProvider);
@@ -51,17 +93,20 @@ export const loginWithGoogle = async (): Promise<User | null> => {
       console.info('Sign in popup was closed by user.');
       return null;
     }
+    if (error?.code === 'auth/operation-not-allowed') {
+      throw error;
+    }
     console.warn('Google Popup login failed, trying redirect...', error);
     if (error?.code === 'auth/popup-blocked' || error?.code === 'auth/cancelled-popup-request') {
       try {
         await signInWithRedirect(auth, googleProvider);
         return null;
-      } catch (redirectErr) {
+      } catch (redirectErr: any) {
         console.error('Redirect sign in error:', redirectErr);
-        return null;
+        throw redirectErr;
       }
     }
-    return null;
+    throw error;
   }
 };
 

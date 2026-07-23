@@ -50,6 +50,7 @@ import { DebtListModal } from './components/DebtListModal';
 import { AddBudgetModal } from './components/AddBudgetModal';
 import { BudgetListModal } from './components/BudgetListModal';
 import { ProfileModal } from './components/ProfileModal';
+import { AuthModal } from './components/AuthModal';
 import { getStoredTheme, applyTheme, ThemeId } from './utils/theme';
 
 export default function App() {
@@ -57,10 +58,11 @@ export default function App() {
   const [wallets, setWallets] = useState<Wallet[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   
-  // Theme state
+  // Theme & Auth state
   const [currentTheme, setCurrentTheme] = useState<ThemeId>(() => getStoredTheme());
   const [isThemeModalOpen, setIsThemeModalOpen] = useState<boolean>(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState<boolean>(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
 
   useEffect(() => {
     applyTheme(currentTheme);
@@ -478,6 +480,7 @@ export default function App() {
         onOpenDebtModal={() => setIsDebtListModalOpen(true)}
         onOpenBudgetModal={() => setIsBudgetListModalOpen(true)}
         onOpenProfileModal={() => setIsProfileModalOpen(true)}
+        onOpenAuthModal={() => setIsAuthModalOpen(true)}
         activeDebtCount={debts.filter((d) => d.status === 'active').length}
       />
 
@@ -640,7 +643,13 @@ export default function App() {
         totalBalance={walletStats.reduce((acc, curr) => acc + curr.currentBalance, 0)}
         onOpenThemeModal={() => setIsThemeModalOpen(true)}
         onOpenExportModal={() => setIsExportModalOpen(true)}
+        onOpenAuthModal={() => setIsAuthModalOpen(true)}
         currentTheme={currentTheme}
+      />
+
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
       />
 
     </div>

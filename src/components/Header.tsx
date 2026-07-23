@@ -31,6 +31,7 @@ interface HeaderProps {
   onOpenDebtModal: () => void;
   onOpenBudgetModal: () => void;
   onOpenProfileModal?: () => void;
+  onOpenAuthModal?: () => void;
   activeDebtCount?: number;
 }
 
@@ -47,6 +48,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenDebtModal,
   onOpenBudgetModal,
   onOpenProfileModal,
+  onOpenAuthModal,
   activeDebtCount = 0,
 }) => {
   const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
@@ -247,12 +249,11 @@ export const Header: React.FC<HeaderProps> = ({
             ) : (
               <div className="flex items-center gap-1.5">
                 <button
-                  onClick={handleGoogleLogin}
-                  disabled={isLoggingIn}
-                  className="flex items-center gap-1 px-2.5 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold transition shadow-sm"
+                  onClick={onOpenAuthModal}
+                  className="flex items-center gap-1 px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold transition shadow-sm"
                 >
-                  <UserIcon className="w-3 h-3" />
-                  <span>Google Login</span>
+                  <UserIcon className="w-3.5 h-3.5" />
+                  <span>Sign In</span>
                 </button>
                 <button
                   onClick={onOpenProfileModal}
