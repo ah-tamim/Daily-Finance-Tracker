@@ -78,6 +78,8 @@ export const InstallAppPrompt: React.FC<InstallAppPromptProps> = ({ forceShow = 
     };
   }, [forceShow]);
 
+  const [manualGuideNotice, setManualGuideNotice] = useState<boolean>(false);
+
   const handleInstallClick = async () => {
     if (deferredPrompt) {
       try {
@@ -92,10 +94,12 @@ export const InstallAppPrompt: React.FC<InstallAppPromptProps> = ({ forceShow = 
         setDeferredPrompt(null);
       } catch (err) {
         console.error('Install prompt error:', err);
+        setManualGuideNotice(true);
       }
+    } else if (isInIframe) {
+      handleOpenNewTab();
     } else {
-      // Direct instruction switch
-      setActiveTab('chrome');
+      setManualGuideNotice(true);
     }
   };
 
@@ -165,19 +169,33 @@ export const InstallAppPrompt: React.FC<InstallAppPromptProps> = ({ forceShow = 
           </div>
         ) : (
           <div>
-            {/* Direct One-Click Install Button if Chrome beforeinstallprompt event is ready */}
-            {deferredPrompt && (
-              <div className="mb-4 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-center justify-between gap-3">
-                <div className="text-xs text-emerald-300">
-                  <span className="font-semibold block">1-Click Fast Install</span>
-                  <span>Ready to install on this device</span>
-                </div>
-                <button
-                  onClick={handleInstallClick}
-                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-md transition shrink-0 flex items-center gap-1.5"
+            {/* Primary Action Install Button Card */}
+            <div className="mb-4 p-3 bg-gradient-to-r from-emerald-950/60 to-teal-950/60 border border-emerald-500/30 rounded-xl flex items-center justify-between gap-3 shadow-inner">
+              <div className="text-xs text-emerald-200 min-w-0">
+                <span className="font-bold block text-emerald-400 text-xs">
+                  {deferredPrompt ? '1-Click Fast Install Ready' : isInIframe ? 'Open Tab to Install PWA' : 'Install Daily Finance'}
+                </span>
+                <span className="text-[11px] text-slate-300 block truncate">
+                  {deferredPrompt ? 'Tap below to add to device' : isInIframe ? 'Required inside preview frame' : 'Add shortcut on homescreen'}
+                </span>
+              </div>
+              <button
+                onClick={handleInstallClick}
+                className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-bold text-xs rounded-xl shadow-lg transition shrink-0 flex items-center gap-1.5 border border-emerald-400/30"
+              >
+                {isInIframe ? <ExternalLink className="w-4 h-4" /> : <Download className="w-4 h-4" />}
+                <span>Install App</span>
+              </button>
+            </div>
+
+            {manualGuideNotice && !deferredPrompt && !isInIframe && (
+              <div className="mb-3 p-2.5 bg-amber-500/10 border border-amber-500/30 text-amber-300 rounded-xl text-xs flex items-center justify-between gap-2 animate-in fade-in">
+                <span>Follow the steps below for your browser to complete installation:</span>
+                <button 
+                  onClick={() => setManualGuideNotice(false)} 
+                  className="text-amber-400 hover:text-amber-200 font-bold"
                 >
-                  <Download className="w-4 h-4" />
-                  <span>Install</span>
+                  ✕
                 </button>
               </div>
             )}
@@ -292,23 +310,20 @@ export const InstallAppPrompt: React.FC<InstallAppPromptProps> = ({ forceShow = 
             )}
 
             {/* Action Buttons */}
-            <div className="mt-4 flex items-center justify-between gap-2">
-              {isInIframe ? (
-                <button
-                  onClick={handleOpenNewTab}
-                  className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs rounded-xl transition shadow-md flex items-center justify-center gap-1.5"
-                >
-                  <ExternalLink className="w-4 h-4" />
-                  <span>Open in New Tab to Enable Install</span>
-                </button>
-              ) : (
-                <button
-                  onClick={handleDismiss}
-                  className="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs rounded-xl transition text-center"
-                >
-                  Got It
-                </button>
-              )}
+            <div className="mt-4 flex items-center gap-2">
+              <button
+                onClick={handleInstallClick}
+                className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-500 active:scale-98 text-white font-bold text-xs rounded-xl transition shadow-md flex items-center justify-center gap-1.5"
+              >
+                {isInIframe ? <ExternalLink className="w-4 h-4" /> : <Download className="w-4 h-4" />}
+                <span>{isInIframe ? 'Open Tab to Install' : 'Install App'}</span>
+              </button>
+              <button
+                onClick={handleDismiss}
+                className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs rounded-xl transition text-center shrink-0"
+              >
+                Close
+              </button>
             </div>
           </div>
         )}
