@@ -101,7 +101,23 @@ export const WalletList: React.FC<WalletListProps> = ({
                     </span>
                   </div>
                 </div>
-                <ChevronRight className="w-4 h-4 theme-text-muted group-hover:text-emerald-500 transition" />
+                <div className="flex items-center gap-1.5">
+                  {onOpenEditInitialBalance && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onOpenEditInitialBalance(wallet);
+                      }}
+                      className="px-2 py-0.5 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 rounded-md transition flex items-center gap-1 shrink-0"
+                      title="Edit Starting / Initial Balance"
+                    >
+                      <Edit2 className="w-2.5 h-2.5" />
+                      <span>Edit Initial</span>
+                    </button>
+                  )}
+                  <ChevronRight className="w-4 h-4 theme-text-muted group-hover:text-emerald-500 transition" />
+                </div>
               </div>
 
               {/* Balances breakdown */}
