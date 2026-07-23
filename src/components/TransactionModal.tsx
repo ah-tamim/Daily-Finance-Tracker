@@ -1,411 +1,253 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { Transaction, Wallet } from '../types/finance';
 import { 
-  Transaction, 
-  TransactionType, 
-  Wallet, 
-  CustomCategories,
-  DEFAULT_INCOME_CATEGORIES, 
-  DEFAULT_EXPENSE_CATEGORIES 
-} from '../types/finance';
-import { 
-  X, 
-  TrendingUp, 
-  TrendingDown, 
+  Search, 
+  Filter, 
+  ArrowUpRight, 
+  ArrowDownRight, 
   ArrowRightLeft, 
-  Calendar, 
-  Wallet as WalletIcon, 
-  Tag, 
-  FileText, 
-  DollarSign,
-  Plus,
-  Settings
+  Edit3, 
+  Trash2, 
+  Calendar,
+  Wallet as WalletIcon,
+  Tag,
+  Plus
 } from 'lucide-react';
 
-interface TransactionModalProps {
-  isOpen: boolean;
-  editingTransaction: Transaction | null;
-  defaultWalletId?: string;
-  initialType?: TransactionType;
+interface TransactionHistoryProps {
+  transactions: Transaction[];
   wallets: Wallet[];
-  categories?: CustomCategories;
-  onOpenCategoryManager?: () => void;
-  onClose: () => void;
-  onSave: (tx: Omit<Transaction, 'id' | 'userId' | 'monthKey' | 'createdAt'>) => Promise<void>;
+  selectedMonthLabel: string;
+  onEditTransaction: (tx: Transaction) => void;
+  onDeleteTransaction: (txId: string) => void;
+  onAddTransaction?: () => void;
 }
 
-export const TransactionModal: React.FC<TransactionModalProps> = ({
-  isOpen,
-  editingTransaction,
-  defaultWalletId,
-  initialType = 'expense',
+export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
+  transactions,
   wallets,
-  categories,
-  onOpenCategoryManager,
-  onClose,
-  onSave,
+  selectedMonthLabel,
+  onEditTransaction,
+  onDeleteTransaction,
+  onAddTransaction,
 }) => {
-  if (!isOpen) return null;
+  const [searchTerm, setSearchTerm] = useState('');
+  const [walletFilter, setWalletFilter] = useState('ALL');
+  const [typeFilter, setTypeFilter] = useState('ALL');
 
-  const todayStr = new Date().toISOString().slice(0, 10);
+  const walletMap = new Map<string, Wallet>();
+  wallets.forEach((w) => walletMap.set(w.id, w));
 
-  const [type, setType] = useState<TransactionType>('expense');
-  const [date, setDate] = useState<string>(todayStr);
-  const [walletId, setWalletId] = useState<string>(defaultWalletId || wallets[0]?.id || '');
-  const [targetWalletId, setTargetWalletId] = useState<string>(
-    wallets.find((w) => w.id !== walletId)?.id || wallets[1]?.id || ''
-  );
-  const [category, setCategory] = useState<string>(DEFAULT_EXPENSE_CATEGORIES[0]);
-  const [customCategory, setCustomCategory] = useState<string>('');
-  const [isCustomCategory, setIsCustomCategory] = useState<boolean>(false);
-  const [description, setDescription] = useState<string>('');
-  const [amount, setAmount] = useState<string>('');
-  const [isSaving, setIsSaving] = useState<boolean>(false);
-  const [errorMsg, setErrorMsg] = useState<string>('');
+  const filteredTransactions = transactions.filter((tx) => {
+    // Search matching
+    const searchLower = searchTerm.toLowerCase();
+    const catMatch = tx.category.toLowerCase().includes(searchLower);
+    const descMatch = (tx.description || '').toLowerCase().includes(searchLower);
+    const amountMatch = tx.amount.toString().includes(searchLower);
+    const dateMatch = tx.date.includes(searchLower);
+    const matchesSearch = !searchTerm || catMatch || descMatch || amountMatch || dateMatch;
 
-  useEffect(() => {
-    if (editingTransaction) {
-      setType(editingTransaction.type);
-      setDate(editingTransaction.date);
-      setWalletId(editingTransaction.walletId);
-      if (editingTransaction.targetWalletId) {
-        setTargetWalletId(editingTransaction.targetWalletId);
-      }
-      setCategory(editingTransaction.category);
-      setDescription(editingTransaction.description || '');
-      setAmount(editingTransaction.amount.toString());
-    } else {
-      setDate(todayStr);
-      const startType = initialType || 'expense';
-      setType(startType);
-      if (defaultWalletId) {
-        setWalletId(defaultWalletId);
-      } else if (wallets.length > 0) {
-        setWalletId(wallets[0].id);
-      }
-      if (startType === 'income') {
-        setCategory(DEFAULT_INCOME_CATEGORIES[0]);
-      } else if (startType === 'transfer') {
-        setCategory('Transfer');
-      } else {
-        setCategory(DEFAULT_EXPENSE_CATEGORIES[0]);
-      }
-      setAmount('');
-      setDescription('');
-    }
-  }, [editingTransaction, defaultWalletId, initialType, wallets]);
+    // Wallet filter matching
+    const matchesWallet =
+      walletFilter === 'ALL' ||
+      tx.walletId === walletFilter ||
+      tx.targetWalletId === walletFilter;
 
-  // Handle Type Change
-  const handleTypeChange = (newType: TransactionType) => {
-    setType(newType);
-    if (newType === 'expense') {
-      setCategory(DEFAULT_EXPENSE_CATEGORIES[0]);
-    } else if (newType === 'income') {
-      setCategory(DEFAULT_INCOME_CATEGORIES[0]);
-    } else if (newType === 'transfer') {
-      setCategory('Transfer');
-    }
-  };
+    // Type filter matching
+    const matchesType = typeFilter === 'ALL' || tx.type === typeFilter;
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrorMsg('');
-
-    const numAmount = parseFloat(amount);
-    if (isNaN(numAmount) || numAmount <= 0) {
-      setErrorMsg('Please enter a valid amount greater than 0.');
-      return;
-    }
-
-    if (!walletId) {
-      setErrorMsg('Please select a wallet.');
-      return;
-    }
-
-    if (type === 'transfer' && walletId === targetWalletId) {
-      setErrorMsg('Source and target wallets for transfer cannot be the same.');
-      return;
-    }
-
-    const finalCategory = isCustomCategory ? customCategory.trim() || 'General' : category;
-
-    try {
-      setIsSaving(true);
-      const txPayload: Omit<Transaction, 'id' | 'userId' | 'monthKey' | 'createdAt'> = {
-        date,
-        type,
-        walletId,
-        category: finalCategory,
-        description: description.trim(),
-        amount: numAmount,
-      };
-
-      if (type === 'transfer' && targetWalletId) {
-        txPayload.targetWalletId = targetWalletId;
-      }
-
-      await onSave(txPayload);
-      onClose();
-    } catch (err: any) {
-      console.error('Failed to save transaction:', err);
-      setErrorMsg(err?.message || 'Failed to save transaction.');
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const availableIncome = categories?.income && categories.income.length > 0 ? categories.income : DEFAULT_INCOME_CATEGORIES;
-  const availableExpense = categories?.expense && categories.expense.length > 0 ? categories.expense : DEFAULT_EXPENSE_CATEGORIES;
-  const availableCategories = type === 'income' ? availableIncome : availableExpense;
+    return matchesSearch && matchesWallet && matchesType;
+  });
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/70 backdrop-blur-sm p-3 sm:p-6">
-      <div className="min-h-full flex items-center justify-center">
-        <div className="theme-modal border rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 my-auto">
-        
-        {/* Header */}
-        <div className="p-6 border-b flex items-center justify-between">
-          <h2 className="text-xl font-bold flex items-center gap-2">
-            {editingTransaction ? 'Edit Transaction' : 'New Transaction Entry'}
+    <div className="theme-card border rounded-xl p-4 shadow-xs">
+      
+      {/* Title & Filter Controls */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
+        <div>
+          <h2 className="text-xs font-extrabold uppercase tracking-wider flex items-center gap-2">
+            Transaction History ({selectedMonthLabel})
           </h2>
-          <button
-            onClick={onClose}
-            className="p-2 theme-subtle-btn rounded-xl transition"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <p className="text-[11px] theme-text-muted mt-0.5">
+            Showing date, source &amp; target wallets, type, category, description, and amount
+          </p>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-5">
-          {errorMsg && (
-            <div className="p-3 bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-300 rounded-xl text-xs">
-              {errorMsg}
-            </div>
-          )}
-
-          {/* Type Selector Tabs */}
-          <div className="grid grid-cols-3 gap-2 bg-slate-100 dark:bg-slate-950 p-1.5 rounded-2xl border border-slate-200 dark:border-slate-800 text-xs font-semibold">
-            <button
-              type="button"
-              onClick={() => handleTypeChange('expense')}
-              className={`flex items-center justify-center gap-1.5 py-2 rounded-xl transition ${
-                type === 'expense'
-                  ? 'bg-rose-600 text-white shadow-md'
-                  : 'theme-text-muted hover:text-slate-900 dark:hover:text-slate-200'
-              }`}
-            >
-              <TrendingDown className="w-4 h-4" />
-              <span>Expense</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleTypeChange('income')}
-              className={`flex items-center justify-center gap-1.5 py-2 rounded-xl transition ${
-                type === 'income'
-                  ? 'bg-teal-600 text-white shadow-md'
-                  : 'theme-text-muted hover:text-slate-900 dark:hover:text-slate-200'
-              }`}
-            >
-              <TrendingUp className="w-4 h-4" />
-              <span>Income</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleTypeChange('transfer')}
-              className={`flex items-center justify-center gap-1.5 py-2 rounded-xl transition ${
-                type === 'transfer'
-                  ? 'bg-indigo-600 text-white shadow-md'
-                  : 'theme-text-muted hover:text-slate-900 dark:hover:text-slate-200'
-              }`}
-            >
-              <ArrowRightLeft className="w-4 h-4" />
-              <span>Transfer</span>
-            </button>
-          </div>
-
-          {/* Date Picker */}
-          <div>
-            <label className="block text-xs font-semibold mb-1.5 flex items-center gap-1.5">
-              <Calendar className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-              <span>Date</span>
-            </label>
-            <input
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              required
-              className="w-full theme-input border focus:border-emerald-500 rounded-xl p-3 text-sm focus:outline-none"
-            />
-          </div>
-
-          {/* Wallet Selection */}
-          {type === 'transfer' ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-semibold mb-1.5 flex items-center gap-1.5">
-                  <WalletIcon className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-                  <span>From Wallet</span>
-                </label>
-                <select
-                  value={walletId}
-                  onChange={(e) => setWalletId(e.target.value)}
-                  className="w-full theme-input border focus:border-emerald-500 rounded-xl p-3 text-sm focus:outline-none"
-                >
-                  {wallets.map((w) => (
-                    <option key={w.id} value={w.id} className="bg-white dark:bg-slate-900 text-slate-800 dark:text-white">
-                      {w.name} (৳{w.initialBalance})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold mb-1.5 flex items-center gap-1.5">
-                  <WalletIcon className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
-                  <span>To Wallet</span>
-                </label>
-                <select
-                  value={targetWalletId}
-                  onChange={(e) => setTargetWalletId(e.target.value)}
-                  className="w-full theme-input border focus:border-emerald-500 rounded-xl p-3 text-sm focus:outline-none"
-                >
-                  {wallets.map((w) => (
-                    <option key={w.id} value={w.id} className="bg-white dark:bg-slate-900 text-slate-800 dark:text-white">
-                      {w.name} (৳{w.initialBalance})
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          ) : (
-            <div>
-              <label className="block text-xs font-semibold mb-1.5 flex items-center gap-1.5">
-                <WalletIcon className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                <span>Select Wallet</span>
-              </label>
-              <select
-                value={walletId}
-                onChange={(e) => setWalletId(e.target.value)}
-                className="w-full theme-input border focus:border-emerald-500 rounded-xl p-3 text-sm focus:outline-none"
-              >
-                {wallets.map((w) => (
-                  <option key={w.id} value={w.id} className="bg-white dark:bg-slate-900 text-slate-800 dark:text-white">
-                    {w.name} ({w.type.replace('_', ' ')})
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          {/* Category */}
-          {type !== 'transfer' && (
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="text-xs font-semibold flex items-center gap-1.5">
-                  <Tag className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
-                  <span>Category</span>
-                </label>
-                <div className="flex items-center gap-2">
-                  {onOpenCategoryManager && (
-                    <button
-                      type="button"
-                      onClick={onOpenCategoryManager}
-                      className="text-[11px] text-indigo-500 hover:text-indigo-400 font-semibold flex items-center gap-1"
-                    >
-                      <Settings className="w-3 h-3" />
-                      <span>Edit Categories</span>
-                    </button>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => setIsCustomCategory(!isCustomCategory)}
-                    className="text-[11px] text-emerald-600 dark:text-emerald-400 hover:underline font-semibold"
-                  >
-                    {isCustomCategory ? 'Select from list' : '+ One-time Custom'}
-                  </button>
-                </div>
-              </div>
-
-              {isCustomCategory ? (
-                <input
-                  type="text"
-                  placeholder="e.g. Subscriptions, Laundry, Books"
-                  value={customCategory}
-                  onChange={(e) => setCustomCategory(e.target.value)}
-                  className="w-full theme-input border focus:border-emerald-500 rounded-xl p-3 text-sm focus:outline-none"
-                />
-              ) : (
-                <select
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                  className="w-full theme-input border focus:border-emerald-500 rounded-xl p-3 text-sm focus:outline-none"
-                >
-                  {availableCategories.map((cat) => (
-                    <option key={cat} value={cat} className="bg-white dark:bg-slate-900 text-slate-800 dark:text-white">
-                      {cat}
-                    </option>
-                  ))}
-                </select>
-              )}
-            </div>
-          )}
-
-          {/* Amount */}
-          <div>
-            <label className="block text-xs font-semibold mb-1.5 flex items-center gap-1.5">
-              <DollarSign className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-              <span>Amount (৳)</span>
-            </label>
-            <input
-              type="number"
-              step="any"
-              placeholder="0.00"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              required
-              className="w-full theme-input border focus:border-emerald-500 rounded-xl p-3 text-lg font-bold font-mono text-emerald-600 dark:text-emerald-400 focus:outline-none"
-            />
-          </div>
-
-          {/* Description */}
-          <div>
-            <label className="block text-xs font-semibold mb-1.5 flex items-center gap-1.5">
-              <FileText className="w-3.5 h-3.5 theme-text-muted" />
-              <span>Description / Note</span>
-            </label>
+        {/* Filter Toolbar */}
+        <div className="flex flex-wrap items-center gap-2">
+          
+          {/* Search Box */}
+          <div className="relative flex-1 sm:w-44">
+            <Search className="w-3.5 h-3.5 theme-text-muted absolute left-2.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
-              placeholder="e.g. Lunch at cafeteria, Pant purchase, Gift to Apu"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="w-full theme-input border focus:border-emerald-500 rounded-xl p-3 text-sm focus:outline-none"
+              placeholder="Search category, desc..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full theme-input border rounded-lg pl-8 pr-2.5 py-1 text-xs focus:outline-none focus:border-emerald-500"
             />
           </div>
 
-          {/* Submit */}
-          <div className="pt-2 flex items-center gap-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="w-1/3 py-3 theme-subtle-btn rounded-xl text-xs font-semibold transition"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isSaving}
-              className="w-2/3 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-emerald-900/20 transition transform active:scale-95"
-            >
-              {isSaving ? 'Saving...' : editingTransaction ? 'Update Entry' : 'Save Entry'}
-            </button>
-          </div>
+          {/* Wallet Filter */}
+          <select
+            value={walletFilter}
+            onChange={(e) => setWalletFilter(e.target.value)}
+            className="theme-input border rounded-lg px-2.5 py-1 text-xs focus:outline-none cursor-pointer"
+          >
+            <option value="ALL">All Wallets</option>
+            {wallets.map((w) => (
+              <option key={w.id} value={w.id}>
+                {w.name}
+              </option>
+            ))}
+          </select>
 
-        </form>
+          {/* Type Filter */}
+          <select
+            value={typeFilter}
+            onChange={(e) => setTypeFilter(e.target.value)}
+            className="theme-input border rounded-lg px-2.5 py-1 text-xs focus:outline-none cursor-pointer"
+          >
+            <option value="ALL">All Types</option>
+            <option value="income">Income Only</option>
+            <option value="expense">Expense Only</option>
+            <option value="transfer">Inter Transfer</option>
+          </select>
+
+          {/* Body Add Entry Button */}
+          {onAddTransaction && (
+            <button
+              onClick={onAddTransaction}
+              className="flex items-center gap-1.5 px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold transition shadow-xs active:scale-95 shrink-0"
+              title="Add New Transaction Entry"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>+ Add Entry</span>
+            </button>
+          )}
 
         </div>
       </div>
+
+      {/* Transactions List / Table */}
+      {filteredTransactions.length === 0 ? (
+        <div className="text-center py-8 theme-text-muted text-xs bg-slate-100/50 dark:bg-slate-950/40 rounded-lg border border-slate-200 dark:border-slate-800/50">
+          No transactions match the selected filters for {selectedMonthLabel}.
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-[11px] min-w-[620px]">
+            <thead>
+              <tr className="border-b border-slate-200 dark:border-slate-800 theme-text-muted font-extrabold uppercase text-[9px] tracking-wider bg-slate-100/70 dark:bg-slate-950/50">
+                <th className="py-2 px-2.5">Date</th>
+                <th className="py-2 px-2.5">Type</th>
+                <th className="py-2 px-2.5">Wallet(s)</th>
+                <th className="py-2 px-2.5">Category</th>
+                <th className="py-2 px-2.5">Description</th>
+                <th className="py-2 px-2.5 text-right">Amount</th>
+                <th className="py-2 px-2.5 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-200 dark:divide-slate-800/60">
+              {filteredTransactions.map((tx) => {
+                const srcWallet = walletMap.get(tx.walletId);
+                const targetWallet = tx.targetWalletId ? walletMap.get(tx.targetWalletId) : null;
+
+                return (
+                  <tr key={tx.id} className="hover:bg-slate-100/80 dark:hover:bg-slate-800/40 transition">
+                    
+                    {/* Date */}
+                    <td className="py-2 px-2.5 font-mono theme-text-muted whitespace-nowrap">
+                      {tx.date}
+                    </td>
+
+                    {/* Type Badge */}
+                    <td className="py-2 px-2.5 whitespace-nowrap">
+                      {tx.type === 'income' && (
+                        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-teal-500/10 text-teal-600 dark:text-teal-400 border border-teal-500/20 text-[9px] font-bold">
+                          <ArrowDownRight className="w-2.5 h-2.5" /> Income
+                        </span>
+                      )}
+                      {tx.type === 'expense' && (
+                        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 text-[9px] font-bold">
+                          <ArrowUpRight className="w-2.5 h-2.5" /> Expense
+                        </span>
+                      )}
+                      {tx.type === 'transfer' && (
+                        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 text-[9px] font-bold">
+                          <ArrowRightLeft className="w-2.5 h-2.5" /> Transfer
+                        </span>
+                      )}
+                    </td>
+
+                    {/* Wallet */}
+                    <td className="py-2 px-2.5 font-semibold whitespace-nowrap">
+                      {tx.type === 'transfer' ? (
+                        <span className="flex items-center gap-1">
+                          <span className="text-amber-600 dark:text-amber-400">{srcWallet?.name || 'Wallet'}</span>
+                          <span className="theme-text-muted">→</span>
+                          <span className="text-indigo-600 dark:text-indigo-400">{targetWallet?.name || 'Wallet'}</span>
+                        </span>
+                      ) : (
+                        <span>{srcWallet?.name || 'Wallet'}</span>
+                      )}
+                    </td>
+
+                    {/* Category */}
+                    <td className="py-2 px-2.5 font-bold">
+                      {tx.category}
+                    </td>
+
+                    {/* Description */}
+                    <td className="py-2 px-2.5 theme-text-muted max-w-xs truncate">
+                      {tx.description || '—'}
+                    </td>
+
+                    {/* Amount */}
+                    <td className="py-2 px-2.5 text-right font-mono font-bold text-xs whitespace-nowrap">
+                      {tx.type === 'income' && (
+                        <span className="text-teal-600 dark:text-teal-400">+৳{tx.amount.toLocaleString()}</span>
+                      )}
+                      {tx.type === 'expense' && (
+                        <span className="text-rose-600 dark:text-rose-400">-৳{tx.amount.toLocaleString()}</span>
+                      )}
+                      {tx.type === 'transfer' && (
+                        <span className="text-indigo-600 dark:text-indigo-400">৳{tx.amount.toLocaleString()}</span>
+                      )}
+                    </td>
+
+                    {/* Actions */}
+                    <td className="py-2 px-2.5 text-right whitespace-nowrap">
+                      <div className="flex items-center justify-end gap-0.5">
+                        <button
+                          onClick={() => onEditTransaction(tx)}
+                          className="p-1 theme-text-muted hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-slate-200 dark:hover:bg-slate-800 rounded transition"
+                          title="Edit transaction"
+                        >
+                          <Edit3 className="w-3 h-3" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (window.confirm('Are you sure you want to delete this transaction entry?')) {
+                              onDeleteTransaction(tx.id);
+                            }
+                          }}
+                          className="p-1 theme-text-muted hover:text-rose-600 dark:hover:text-rose-400 hover:bg-slate-200 dark:hover:bg-slate-800 rounded transition"
+                          title="Delete transaction"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </td>
+
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+
     </div>
   );
 };
