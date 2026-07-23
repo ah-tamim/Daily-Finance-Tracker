@@ -27,11 +27,23 @@ const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 // Initialize Firestore with offline persistence cache
 let db;
 try {
-  db = initializeFirestore(app, {
-    localCache: persistentLocalCache({
-      tabManager: persistentMultipleTabManager()
-    })
-  });
+  const customDbId = firebaseConfig.firestoreDatabaseId && firebaseConfig.firestoreDatabaseId !== '(default)' 
+    ? firebaseConfig.firestoreDatabaseId 
+    : undefined;
+
+  if (customDbId) {
+    db = initializeFirestore(app, {
+      localCache: persistentLocalCache({
+        tabManager: persistentMultipleTabManager()
+      })
+    }, customDbId);
+  } else {
+    db = initializeFirestore(app, {
+      localCache: persistentLocalCache({
+        tabManager: persistentMultipleTabManager()
+      })
+    });
+  }
 } catch {
   // Fallback if already initialized or unsupported in environment
   db = getFirestore(app);

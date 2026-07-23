@@ -122,6 +122,16 @@ export const Header: React.FC<HeaderProps> = ({
               </div>
             </div>
           </div>
+
+          {/* Quick Mobile Theme Button */}
+          <button
+            onClick={onOpenThemeModal}
+            className="flex md:hidden items-center gap-1.5 px-2.5 py-1 theme-subtle-btn hover:text-amber-500 rounded-xl text-xs font-semibold border transition shadow-2xs"
+            title="Change Theme & Appearance"
+          >
+            <Palette className="w-3.5 h-3.5 text-amber-500" />
+            <span>Theme</span>
+          </button>
         </div>
 
         {/* Month Selector & Controls */}
@@ -193,20 +203,11 @@ export const Header: React.FC<HeaderProps> = ({
             <span>XML</span>
           </button>
 
-          <button
-            onClick={onOpenThemeModal}
-            className="flex items-center gap-1 px-2.5 py-1 theme-subtle-btn rounded-lg text-xs font-medium border transition"
-            title="Change Theme & Appearance"
-          >
-            <Palette className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-            <span>Theme</span>
-          </button>
-
           {onOpenInstallModal && (
             <button
               onClick={onOpenInstallModal}
-              className="flex items-center gap-1 px-2.5 py-1 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 rounded-lg text-xs font-semibold transition shadow-xs"
-              title="Install Web App on Mobile / Desktop"
+              className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-lg text-xs font-semibold border border-emerald-500/30 transition shadow-2xs"
+              title="Install App on Mobile or Desktop"
             >
               <Smartphone className="w-3.5 h-3.5 text-emerald-500" />
               <span>Install App</span>
@@ -222,8 +223,18 @@ export const Header: React.FC<HeaderProps> = ({
             <span>Cleanup</span>
           </button>
 
-          {/* User Auth Info & Profile */}
-          <div className="flex items-center ml-1 border-l border-slate-200 dark:border-slate-800/80 pl-2.5">
+          {/* User Auth Info & Theme / Profile Controls */}
+          <div className="flex items-center ml-1 border-l border-slate-200 dark:border-slate-800/80 pl-2.5 gap-2">
+            {/* Desktop Theme Setup Button */}
+            <button
+              onClick={onOpenThemeModal}
+              className="hidden md:flex items-center gap-1.5 px-2.5 py-1 theme-subtle-btn hover:text-amber-500 rounded-lg text-xs font-semibold border transition"
+              title="Change Theme & Appearance"
+            >
+              <Palette className="w-3.5 h-3.5 text-amber-500" />
+              <span>Theme</span>
+            </button>
+
             {user ? (
               <div className="flex items-center gap-1.5">
                 <button

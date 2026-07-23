@@ -1,12 +1,10 @@
 {
-  "projectId": "modified-ascent-j1ttq",
-  "appId": "1:964252722846:web:93c48e557160b51dc4bd8f",
-  "apiKey": "AIzaSyAo3nDdr1mjHe8clW2Y2rsWM_0NTR0IUa4",
-  "authDomain": "modified-ascent-j1ttq.firebaseapp.com",
-  "firestoreDatabaseId": "ai-studio-dailyfinancetrac-2e1fb4fd-d361-4bc0-a839-dca0adc97475",
-  "storageBucket": "modified-ascent-j1ttq.firebasestorage.app",
-  "messagingSenderId": "964252722846",
-  "measurementId": "",
-  "oAuthClientId": "964252722846-mr70q93i2ud7f8oupl6crqc3m5krot39.apps.googleusercontent.com",
-  "recaptchaSiteKey": ""
+  "projectId": "daily-finance-tracker-cbdc7",
+  "appId": "1:379062056094:web:70d7b890efefd61bb1378f",
+  "apiKey": "AIzaSyDCxggsfexdu5_8Dr_yB2EVKZ4AsAPu3jI",
+  "authDomain": "daily-finance-tracker-cbdc7.firebaseapp.com",
+  "firestoreDatabaseId": "(default)",
+  "storageBucket": "daily-finance-tracker-cbdc7.firebasestorage.app",
+  "messagingSenderId": "379062056094",
+  "measurementId": "G-7E4YRG4VHQ"
 }

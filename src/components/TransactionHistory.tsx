@@ -10,7 +10,8 @@ import {
   Trash2, 
   Calendar,
   Wallet as WalletIcon,
-  Tag
+  Tag,
+  Plus
 } from 'lucide-react';
 
 interface TransactionHistoryProps {
@@ -19,6 +20,7 @@ interface TransactionHistoryProps {
   selectedMonthLabel: string;
   onEditTransaction: (tx: Transaction) => void;
   onDeleteTransaction: (txId: string) => void;
+  onAddTransaction?: () => void;
 }
 
 export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
@@ -27,6 +29,7 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
   selectedMonthLabel,
   onEditTransaction,
   onDeleteTransaction,
+  onAddTransaction,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [walletFilter, setWalletFilter] = useState('ALL');
@@ -110,6 +113,18 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
             <option value="expense">Expense Only</option>
             <option value="transfer">Inter Transfer</option>
           </select>
+
+          {/* Body Add Entry Button */}
+          {onAddTransaction && (
+            <button
+              onClick={onAddTransaction}
+              className="flex items-center gap-1.5 px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold transition shadow-xs active:scale-95 shrink-0"
+              title="Add New Transaction Entry"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>+ Add Entry</span>
+            </button>
+          )}
 
         </div>
       </div>

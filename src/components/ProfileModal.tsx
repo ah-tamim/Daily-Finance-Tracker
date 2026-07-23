@@ -19,7 +19,8 @@ import {
   Clock, 
   Sparkles,
   Lock,
-  Globe
+  Globe,
+  Smartphone
 } from 'lucide-react';
 import { logout, updateUserProfileName, loginWithGoogle } from '../lib/firebase';
 import { ThemeId, THEMES } from '../utils/theme';
@@ -36,6 +37,7 @@ interface ProfileModalProps {
   onOpenThemeModal: () => void;
   onOpenExportModal: () => void;
   onOpenAuthModal?: () => void;
+  onOpenInstallModal?: () => void;
   currentTheme: ThemeId;
 }
 
@@ -51,6 +53,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
   onOpenThemeModal,
   onOpenExportModal,
   onOpenAuthModal,
+  onOpenInstallModal,
   currentTheme,
 }) => {
   const [isEditingName, setIsEditingName] = useState<boolean>(false);
@@ -328,7 +331,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                 <span>Account Preferences &amp; Tools</span>
               </h3>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                 <button
                   onClick={() => {
                     onClose();
@@ -337,15 +340,14 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                   className="theme-card p-3 rounded-2xl border hover:border-emerald-500/50 transition text-left flex items-center justify-between group"
                 >
                   <div className="flex items-center gap-2.5">
-                    <div className="p-2 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                    <div className="p-2 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/20 shrink-0">
                       <Palette className="w-4 h-4" />
                     </div>
-                    <div>
-                      <p className="text-xs font-bold theme-text group-hover:text-emerald-500 transition">App Theme</p>
-                      <p className="text-[10px] theme-text-muted">{currentThemeObj.name}</p>
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold theme-text group-hover:text-emerald-500 transition truncate">App Theme</p>
+                      <p className="text-[10px] theme-text-muted truncate">{currentThemeObj.name}</p>
                     </div>
                   </div>
-                  <span className="text-xs font-semibold text-emerald-500">&rarr;</span>
                 </button>
 
                 <button
@@ -356,16 +358,35 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                   className="theme-card p-3 rounded-2xl border hover:border-emerald-500/50 transition text-left flex items-center justify-between group"
                 >
                   <div className="flex items-center gap-2.5">
-                    <div className="p-2 rounded-xl bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20">
+                    <div className="p-2 rounded-xl bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20 shrink-0">
                       <Download className="w-4 h-4" />
                     </div>
-                    <div>
-                      <p className="text-xs font-bold theme-text group-hover:text-emerald-500 transition">Export Records</p>
-                      <p className="text-[10px] theme-text-muted">XML / Backup format</p>
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold theme-text group-hover:text-emerald-500 transition truncate">Export Records</p>
+                      <p className="text-[10px] theme-text-muted truncate">XML / Backup</p>
                     </div>
                   </div>
-                  <span className="text-xs font-semibold text-emerald-500">&rarr;</span>
                 </button>
+
+                {onOpenInstallModal && (
+                  <button
+                    onClick={() => {
+                      onClose();
+                      onOpenInstallModal();
+                    }}
+                    className="theme-card p-3 rounded-2xl border border-emerald-500/30 hover:border-emerald-500/60 bg-emerald-500/5 transition text-left flex items-center justify-between group"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <div className="p-2 rounded-xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 shrink-0">
+                        <Smartphone className="w-4 h-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs font-bold theme-text group-hover:text-emerald-500 transition truncate">Install App</p>
+                        <p className="text-[10px] theme-text-muted truncate">Mobile / PWA</p>
+                      </div>
+                    </div>
+                  </button>
+                )}
               </div>
             </div>
 

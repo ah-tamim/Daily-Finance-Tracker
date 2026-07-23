@@ -1,4 +1,4 @@
-export type ThemeId = 'emerald' | 'obsidian' | 'violet' | 'amber' | 'nordic' | 'emerald_light';
+export type ThemeId = 'emerald' | 'obsidian' | 'violet' | 'amber' | 'nordic' | 'emerald_light' | 'rose' | 'cyan' | 'sunset_light';
 
 export interface ThemeConfig {
   id: ThemeId;
@@ -11,6 +11,14 @@ export interface ThemeConfig {
 
 export const THEMES: ThemeConfig[] = [
   {
+    id: 'emerald',
+    name: 'Emerald Dark',
+    description: 'Classic dark palette with crisp emerald financial accents (Default)',
+    category: 'dark',
+    previewColor: '#020617',
+    accentColor: '#10B981',
+  },
+  {
     id: 'emerald_light',
     name: 'Mint Light',
     description: 'Fresh light financial aesthetic with vibrant mint & emerald accents',
@@ -19,28 +27,20 @@ export const THEMES: ThemeConfig[] = [
     accentColor: '#059669',
   },
   {
-    id: 'nordic',
-    name: 'Nordic Light',
-    description: 'Crisp, high-contrast light theme with slate & sky blue accents',
-    category: 'light',
-    previewColor: '#F8FAFC',
-    accentColor: '#0284C7',
-  },
-  {
-    id: 'emerald',
-    name: 'Emerald Dark',
-    description: 'Classic dark palette with crisp emerald financial accents',
-    category: 'dark',
-    previewColor: '#020617',
-    accentColor: '#10B981',
-  },
-  {
     id: 'obsidian',
     name: 'Obsidian Blue',
     description: 'Deep navy midnight layout with vibrant blue accents',
     category: 'dark',
     previewColor: '#090D16',
     accentColor: '#3B82F6',
+  },
+  {
+    id: 'nordic',
+    name: 'Nordic Light',
+    description: 'Crisp, high-contrast light theme with slate & sky blue accents',
+    category: 'light',
+    previewColor: '#F8FAFC',
+    accentColor: '#0284C7',
   },
   {
     id: 'violet',
@@ -58,6 +58,30 @@ export const THEMES: ThemeConfig[] = [
     previewColor: '#140D07',
     accentColor: '#F59E0B',
   },
+  {
+    id: 'rose',
+    name: 'Rose Velvet',
+    description: 'Deep crimson wine dark palette with rich rose accents',
+    category: 'dark',
+    previewColor: '#110609',
+    accentColor: '#F43F5E',
+  },
+  {
+    id: 'cyan',
+    name: 'Cyber Cyan',
+    description: 'Futuristic high-tech dark background with glowing cyan accents',
+    category: 'dark',
+    previewColor: '#040F16',
+    accentColor: '#06B6D4',
+  },
+  {
+    id: 'sunset_light',
+    name: 'Sunset Light',
+    description: 'Warm editorial light theme with soft terracotta & amber rose tones',
+    category: 'light',
+    previewColor: '#FFFBEB',
+    accentColor: '#E11D48',
+  },
 ];
 
 const STORAGE_KEY = 'daily_finance_theme_v1';
@@ -71,7 +95,7 @@ export const getStoredTheme = (): ThemeId => {
   } catch {
     /* ignore localStorage error */
   }
-  return 'emerald_light';
+  return 'emerald';
 };
 
 export const applyTheme = (themeId: ThemeId): void => {

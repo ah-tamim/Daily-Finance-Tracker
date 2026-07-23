@@ -123,10 +123,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     } catch (err: any) {
       console.error('GitHub Auth error:', err);
       const code = err?.code || '';
-      if (code === 'auth/operation-not-allowed') {
+      if (code === 'auth/unauthorized-domain') {
+        setError('This domain is not authorized in Firebase OAuth settings. Please use Email & Password registration or Guest mode, or deploy with your own Firebase project configuration.');
+      } else if (code === 'auth/operation-not-allowed') {
         setError('GitHub Sign-In is not enabled in your Firebase project console. Please enable GitHub under Firebase Console -> Authentication -> Sign-in method.');
       } else {
-        setError('Failed to sign in with GitHub. Please check pop-up permissions or try Google/Guest mode.');
+        setError('Failed to sign in with GitHub. Please check pop-up permissions or try Google/Email login.');
       }
     } finally {
       setIsLoading(false);
@@ -145,10 +147,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     } catch (err: any) {
       console.error('Google Auth error:', err);
       const code = err?.code || '';
-      if (code === 'auth/operation-not-allowed') {
+      if (code === 'auth/unauthorized-domain') {
+        setError('Google Auth requires "dailyfinance-tracker.netlify.app" to be added to Firebase Authorized Domains. Since AI Studio owns the temporary Firebase starter project, please use Email & Password registration or Guest Mode, OR use your own Firebase project config.');
+      } else if (code === 'auth/operation-not-allowed') {
         setError('Google Sign-In is not enabled in your Firebase project console. Please enable Google under Firebase Console -> Authentication -> Sign-in method.');
       } else {
-        setError('Failed to sign in with Google. Please try again or use Guest mode.');
+        setError('Failed to sign in with Google. Please try Email & Password or Guest mode.');
       }
     } finally {
       setIsLoading(false);

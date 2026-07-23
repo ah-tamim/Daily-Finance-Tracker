@@ -23,6 +23,7 @@ interface TransactionModalProps {
   isOpen: boolean;
   editingTransaction: Transaction | null;
   defaultWalletId?: string;
+  initialType?: TransactionType;
   wallets: Wallet[];
   onClose: () => void;
   onSave: (tx: Omit<Transaction, 'id' | 'userId' | 'monthKey' | 'createdAt'>) => Promise<void>;
@@ -32,6 +33,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
   isOpen,
   editingTransaction,
   defaultWalletId,
+  initialType = 'expense',
   wallets,
   onClose,
   onSave,
@@ -67,17 +69,24 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
       setAmount(editingTransaction.amount.toString());
     } else {
       setDate(todayStr);
-      setType('expense');
+      const startType = initialType || 'expense';
+      setType(startType);
       if (defaultWalletId) {
         setWalletId(defaultWalletId);
       } else if (wallets.length > 0) {
         setWalletId(wallets[0].id);
       }
-      setCategory(DEFAULT_EXPENSE_CATEGORIES[0]);
+      if (startType === 'income') {
+        setCategory(DEFAULT_INCOME_CATEGORIES[0]);
+      } else if (startType === 'transfer') {
+        setCategory('Transfer');
+      } else {
+        setCategory(DEFAULT_EXPENSE_CATEGORIES[0]);
+      }
       setAmount('');
       setDescription('');
     }
-  }, [editingTransaction, defaultWalletId, wallets]);
+  }, [editingTransaction, defaultWalletId, initialType, wallets]);
 
   // Handle Type Change
   const handleTypeChange = (newType: TransactionType) => {

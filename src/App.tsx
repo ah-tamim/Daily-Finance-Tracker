@@ -9,7 +9,8 @@ import {
   Transaction, 
   WalletStats,
   DebtItem,
-  BudgetItem
+  BudgetItem,
+  TransactionType
 } from './types/finance';
 import { 
   subscribeWallets, 
@@ -36,6 +37,7 @@ import {
 
 import { Header } from './components/Header';
 import { SummaryCards } from './components/SummaryCards';
+import { QuickEntryBar } from './components/QuickEntryBar';
 import { WalletList } from './components/WalletList';
 import { WalletDetailModal } from './components/WalletDetailModal';
 import { TransactionModal } from './components/TransactionModal';
@@ -103,7 +105,15 @@ export default function App() {
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState<boolean>(false);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const [quickEntryWalletId, setQuickEntryWalletId] = useState<string | undefined>(undefined);
+  const [quickEntryKind, setQuickEntryKind] = useState<TransactionType>('expense');
   const [isAddWalletModalOpen, setIsAddWalletModalOpen] = useState<boolean>(false);
+
+  const handleOpenQuickTransaction = (kind: TransactionType = 'expense', walletId?: string) => {
+    setQuickEntryKind(kind);
+    setQuickEntryWalletId(walletId);
+    setEditingTransaction(null);
+    setIsTransactionModalOpen(true);
+  };
   const [isExportModalOpen, setIsExportModalOpen] = useState<boolean>(false);
   const [isCleanupModalOpen, setIsCleanupModalOpen] = useState<boolean>(false);
 
@@ -500,6 +510,14 @@ export default function App() {
           onOpenDebtModal={() => setIsDebtListModalOpen(true)}
         />
 
+        {/* Body Dashboard Quick Entry Bar */}
+        <QuickEntryBar
+          onOpenTransactionWithKind={(kind) => handleOpenQuickTransaction(kind)}
+          onOpenAddWalletModal={() => setIsAddWalletModalOpen(true)}
+          onOpenBudgetModal={() => setIsBudgetListModalOpen(true)}
+          onOpenDebtModal={() => setIsDebtListModalOpen(true)}
+        />
+
         {/* Wallets Grid with Balance Breakdown */}
         <WalletList
           walletStats={walletStats}
@@ -519,6 +537,7 @@ export default function App() {
           transactions={monthTransactions}
           wallets={wallets}
           selectedMonthLabel={selectedMonthLabel}
+          onAddTransaction={() => handleOpenQuickTransaction('expense')}
           onEditTransaction={(tx) => {
             setEditingTransaction(tx);
             setIsTransactionModalOpen(true);
@@ -562,6 +581,7 @@ export default function App() {
         isOpen={isTransactionModalOpen}
         editingTransaction={editingTransaction}
         defaultWalletId={quickEntryWalletId}
+        initialType={quickEntryKind}
         wallets={wallets}
         onClose={() => {
           setIsTransactionModalOpen(false);
@@ -647,6 +667,7 @@ export default function App() {
         onOpenThemeModal={() => setIsThemeModalOpen(true)}
         onOpenExportModal={() => setIsExportModalOpen(true)}
         onOpenAuthModal={() => setIsAuthModalOpen(true)}
+        onOpenInstallModal={() => setIsInstallModalOpen(true)}
         currentTheme={currentTheme}
       />
 
