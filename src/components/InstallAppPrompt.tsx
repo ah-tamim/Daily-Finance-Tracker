@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Download, Share, PlusSquare, X, Smartphone, Check, ArrowDown } from 'lucide-react';
+import { Download, Share, PlusSquare, X, Smartphone, Check, ExternalLink, MoreVertical, Compass } from 'lucide-react';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -15,10 +15,19 @@ export const InstallAppPrompt: React.FC<InstallAppPromptProps> = ({ forceShow = 
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isVisible, setIsVisible] = useState<boolean>(false);
   const [isIOS, setIsIOS] = useState<boolean>(false);
+  const [isInIframe, setIsInIframe] = useState<boolean>(false);
   const [isStandalone, setIsStandalone] = useState<boolean>(false);
   const [installedSuccess, setInstalledSuccess] = useState<boolean>(false);
+  const [activeTab, setActiveTab] = useState<'auto' | 'chrome' | 'ios'>('auto');
 
   useEffect(() => {
+    // Detect if inside an iframe (like AI Studio preview frame)
+    try {
+      setIsInIframe(window.self !== window.top);
+    } catch (e) {
+      setIsInIframe(true);
+    }
+
     // 1. Check if already running in standalone / PWA mode
     const checkStandalone = 
       window.matchMedia('(display-mode: standalone)').matches ||
@@ -30,10 +39,15 @@ export const InstallAppPrompt: React.FC<InstallAppPromptProps> = ({ forceShow = 
       return;
     }
 
-    // 2. Detect iOS
+    // 2. Detect iOS vs Android/Chrome
     const ua = window.navigator.userAgent;
     const isIOSDevice = /iPhone|iPad|iPod/i.test(ua);
     setIsIOS(isIOSDevice);
+    if (isIOSDevice) {
+      setActiveTab('ios');
+    } else {
+      setActiveTab('chrome');
+    }
 
     // 3. Detect Mobile screen or user agent
     const isMobileDevice = isIOSDevice || /Android|webOS|BlackBerry|IEMobile|Opera Mini/i.test(ua) || window.innerWidth <= 768;
@@ -48,12 +62,11 @@ export const InstallAppPrompt: React.FC<InstallAppPromptProps> = ({ forceShow = 
 
     // 5. Check dismissal history unless forceShow is true
     const dismissedTimestamp = localStorage.getItem('pwa_prompt_dismissed');
-    const isRecentlyDismissed = dismissedTimestamp && (Date.now() - parseInt(dismissedTimestamp, 10)) < (3 * 24 * 60 * 60 * 1000); // 3 days
+    const isRecentlyDismissed = dismissedTimestamp && (Date.now() - parseInt(dismissedTimestamp, 10)) < (2 * 24 * 60 * 60 * 1000); // 2 days
 
     if (forceShow) {
       setIsVisible(true);
     } else if (isMobileDevice && !isRecentlyDismissed && !checkStandalone) {
-      // Delay prompt slightly for better UX (1.5 seconds)
       const timer = setTimeout(() => {
         setIsVisible(true);
       }, 1500);
@@ -80,10 +93,14 @@ export const InstallAppPrompt: React.FC<InstallAppPromptProps> = ({ forceShow = 
       } catch (err) {
         console.error('Install prompt error:', err);
       }
-    } else if (!isIOS) {
-      // Fallback: Show message or guide
-      alert('To install Daily Finance Tracker, tap your browser menu (⋮) and select "Add to Home screen" or "Install App".');
+    } else {
+      // Direct instruction switch
+      setActiveTab('chrome');
     }
+  };
+
+  const handleOpenNewTab = () => {
+    window.open(window.location.href, '_blank');
   };
 
   const handleDismiss = () => {
@@ -95,10 +112,8 @@ export const InstallAppPrompt: React.FC<InstallAppPromptProps> = ({ forceShow = 
   if (!isVisible || isStandalone) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs transition-opacity animate-in fade-in duration-200">
-      <div 
-        className="w-full max-w-md bg-slate-900 border border-slate-800 text-white rounded-2xl shadow-2xl overflow-hidden p-5 transition-transform animate-in slide-in-from-bottom-5 duration-300 relative"
-      >
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-xs transition-opacity animate-in fade-in duration-200">
+      <div className="w-full max-w-md bg-slate-900 border border-slate-800 text-white rounded-2xl shadow-2xl overflow-hidden p-5 transition-transform animate-in slide-in-from-bottom-5 duration-300 relative">
         {/* Close Button */}
         <button 
           onClick={handleDismiss}
@@ -109,16 +124,37 @@ export const InstallAppPrompt: React.FC<InstallAppPromptProps> = ({ forceShow = 
         </button>
 
         {/* Header Branding */}
-        <div className="flex items-center gap-3.5 mb-4">
+        <div className="flex items-center gap-3.5 mb-3">
           <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 p-0.5 shadow-md shrink-0 flex items-center justify-center">
             <img src="/icon.svg" alt="App Icon" className="w-full h-full rounded-[10px]" />
           </div>
           <div>
             <h3 className="text-base font-bold text-white leading-tight">Install Daily Finance</h3>
-            <p className="text-xs text-slate-400 mt-0.5">Quick access & offline capability</p>
+            <p className="text-xs text-slate-400 mt-0.5">Quick access on mobile & desktop</p>
           </div>
         </div>
 
+        {/* Iframe Preview Banner Warning */}
+        {isInIframe && (
+          <div className="mb-4 p-3 bg-amber-500/15 border border-amber-500/30 text-amber-300 rounded-xl text-xs space-y-2">
+            <div className="flex items-start gap-2">
+              <Compass className="w-4 h-4 shrink-0 mt-0.5 text-amber-400" />
+              <div>
+                <span className="font-semibold block text-amber-200">Preview Iframe Detected</span>
+                <span>Chrome disables app installation inside preview frames. Please open the app in a standalone tab first.</span>
+              </div>
+            </div>
+            <button
+              onClick={handleOpenNewTab}
+              className="w-full py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-lg transition flex items-center justify-center gap-1.5 shadow-sm"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+              <span>Open in New Tab to Install</span>
+            </button>
+          </div>
+        )}
+
+        {/* Success Banner */}
         {installedSuccess ? (
           <div className="py-4 text-center space-y-2">
             <div className="w-12 h-12 bg-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center mx-auto">
@@ -127,79 +163,152 @@ export const InstallAppPrompt: React.FC<InstallAppPromptProps> = ({ forceShow = 
             <p className="text-sm font-semibold text-emerald-400">App installed successfully!</p>
             <p className="text-xs text-slate-400">You can now open Daily Finance directly from your home screen.</p>
           </div>
-        ) : isIOS ? (
-          /* iOS Safari Specific Step-by-Step Guidance */
-          <div className="space-y-3.5 my-2">
-            <p className="text-xs text-slate-300 leading-relaxed bg-slate-800/60 p-3 rounded-xl border border-slate-700/50">
-              Install this app on your iPhone or iPad for the best full-screen experience.
-            </p>
-
-            <div className="space-y-2.5 text-xs text-slate-300">
-              <div className="flex items-center gap-3 bg-slate-800/40 p-2.5 rounded-xl">
-                <div className="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 font-bold flex items-center justify-center shrink-0">
-                  1
+        ) : (
+          <div>
+            {/* Direct One-Click Install Button if Chrome beforeinstallprompt event is ready */}
+            {deferredPrompt && (
+              <div className="mb-4 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-center justify-between gap-3">
+                <div className="text-xs text-emerald-300">
+                  <span className="font-semibold block">1-Click Fast Install</span>
+                  <span>Ready to install on this device</span>
                 </div>
-                <div className="flex-1">
-                  <span>Tap the </span>
-                  <span className="inline-flex items-center gap-1 font-semibold text-white bg-slate-700 px-1.5 py-0.5 rounded">
-                    <Share className="w-3.5 h-3.5 text-emerald-400" /> Share
-                  </span>
-                  <span> icon in Safari</span>
-                </div>
+                <button
+                  onClick={handleInstallClick}
+                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-md transition shrink-0 flex items-center gap-1.5"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>Install</span>
+                </button>
               </div>
+            )}
 
-              <div className="flex items-center gap-3 bg-slate-800/40 p-2.5 rounded-xl">
-                <div className="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 font-bold flex items-center justify-center shrink-0">
-                  2
-                </div>
-                <div className="flex-1">
-                  <span>Scroll down & select </span>
-                  <span className="inline-flex items-center gap-1 font-semibold text-white bg-slate-700 px-1.5 py-0.5 rounded">
-                    <PlusSquare className="w-3.5 h-3.5 text-emerald-400" /> Add to Home Screen
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3 bg-slate-800/40 p-2.5 rounded-xl">
-                <div className="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 font-bold flex items-center justify-center shrink-0">
-                  3
-                </div>
-                <div>
-                  <span>Tap </span>
-                  <span className="font-semibold text-emerald-400">Add</span>
-                  <span> in the top right corner</span>
-                </div>
-              </div>
+            {/* Platform Instructions Toggle */}
+            <div className="flex bg-slate-800/80 p-1 rounded-xl mb-3.5 text-xs font-medium">
+              <button
+                onClick={() => setActiveTab('chrome')}
+                className={`flex-1 py-1.5 rounded-lg text-center transition ${
+                  activeTab === 'chrome' ? 'bg-emerald-600 text-white shadow-xs font-semibold' : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                Chrome / Android
+              </button>
+              <button
+                onClick={() => setActiveTab('ios')}
+                className={`flex-1 py-1.5 rounded-lg text-center transition ${
+                  activeTab === 'ios' ? 'bg-emerald-600 text-white shadow-xs font-semibold' : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                Safari / iOS
+              </button>
             </div>
 
-            <button
-              onClick={handleDismiss}
-              className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs rounded-xl transition shadow-md mt-2"
-            >
-              Got It
-            </button>
-          </div>
-        ) : (
-          /* Android / Chrome / General Installation */
-          <div className="space-y-4">
-            <p className="text-xs text-slate-300 leading-relaxed bg-slate-800/50 p-3 rounded-xl border border-slate-700/50">
-              Install Daily Finance Tracker on your device to launch it instantly from your home screen with fast offline tracking.
-            </p>
+            {/* Chrome Specific Instructions */}
+            {activeTab === 'chrome' && (
+              <div className="space-y-2.5 text-xs text-slate-300">
+                <p className="text-slate-400 mb-1">If no automatic prompt pops up in Chrome, follow these 3 quick steps:</p>
+                
+                <div className="flex items-start gap-3 bg-slate-800/50 p-2.5 rounded-xl border border-slate-800">
+                  <div className="w-6 h-6 rounded-lg bg-emerald-500/20 text-emerald-400 font-bold flex items-center justify-center shrink-0 mt-0.5">
+                    1
+                  </div>
+                  <div className="flex-1 leading-snug">
+                    <span>Tap the </span>
+                    <span className="inline-flex items-center gap-0.5 font-semibold text-white bg-slate-700 px-1.5 py-0.5 rounded text-[11px]">
+                      <MoreVertical className="w-3 h-3 text-emerald-400" /> 3 dots menu
+                    </span>
+                    <span> in Chrome's top-right corner.</span>
+                  </div>
+                </div>
 
-            <div className="grid grid-cols-2 gap-2.5 pt-1">
-              <button
-                onClick={handleDismiss}
-                className="py-2.5 px-3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium text-xs rounded-xl transition text-center"
-              >
-                Maybe Later
-              </button>
-              <button
-                onClick={handleInstallClick}
-                className="py-2.5 px-3 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs rounded-xl transition shadow-md flex items-center justify-center gap-1.5"
-              >
-                <Download className="w-4 h-4" />
-                <span>Install Now</span>
-              </button>
+                <div className="flex items-start gap-3 bg-slate-800/50 p-2.5 rounded-xl border border-slate-800">
+                  <div className="w-6 h-6 rounded-lg bg-emerald-500/20 text-emerald-400 font-bold flex items-center justify-center shrink-0 mt-0.5">
+                    2
+                  </div>
+                  <div className="flex-1 leading-snug">
+                    <span>Select </span>
+                    <span className="font-semibold text-emerald-400 bg-slate-700/80 px-1.5 py-0.5 rounded text-[11px]">
+                      "Add to Home screen"
+                    </span>
+                    <span> or </span>
+                    <span className="font-semibold text-emerald-400 bg-slate-700/80 px-1.5 py-0.5 rounded text-[11px]">
+                      "Install app"
+                    </span>
+                    <span className="text-slate-400 block text-[11px] mt-0.5">(or "Save and share" → "Install page as app" on desktop Chrome)</span>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 bg-slate-800/50 p-2.5 rounded-xl border border-slate-800">
+                  <div className="w-6 h-6 rounded-lg bg-emerald-500/20 text-emerald-400 font-bold flex items-center justify-center shrink-0 mt-0.5">
+                    3
+                  </div>
+                  <div className="flex-1 leading-snug">
+                    <span>Confirm </span>
+                    <span className="font-semibold text-white">"Install"</span>
+                    <span> to place the icon directly on your mobile home screen.</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* iOS Safari Instructions */}
+            {activeTab === 'ios' && (
+              <div className="space-y-2.5 text-xs text-slate-300">
+                <div className="flex items-start gap-3 bg-slate-800/50 p-2.5 rounded-xl border border-slate-800">
+                  <div className="w-6 h-6 rounded-lg bg-emerald-500/20 text-emerald-400 font-bold flex items-center justify-center shrink-0 mt-0.5">
+                    1
+                  </div>
+                  <div className="flex-1 leading-snug">
+                    <span>Tap the </span>
+                    <span className="inline-flex items-center gap-1 font-semibold text-white bg-slate-700 px-1.5 py-0.5 rounded text-[11px]">
+                      <Share className="w-3 h-3 text-emerald-400" /> Share
+                    </span>
+                    <span> icon at the bottom of Safari.</span>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 bg-slate-800/50 p-2.5 rounded-xl border border-slate-800">
+                  <div className="w-6 h-6 rounded-lg bg-emerald-500/20 text-emerald-400 font-bold flex items-center justify-center shrink-0 mt-0.5">
+                    2
+                  </div>
+                  <div className="flex-1 leading-snug">
+                    <span>Scroll down and select </span>
+                    <span className="inline-flex items-center gap-1 font-semibold text-white bg-slate-700 px-1.5 py-0.5 rounded text-[11px]">
+                      <PlusSquare className="w-3 h-3 text-emerald-400" /> Add to Home Screen
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 bg-slate-800/50 p-2.5 rounded-xl border border-slate-800">
+                  <div className="w-6 h-6 rounded-lg bg-emerald-500/20 text-emerald-400 font-bold flex items-center justify-center shrink-0 mt-0.5">
+                    3
+                  </div>
+                  <div className="flex-1 leading-snug">
+                    <span>Tap </span>
+                    <span className="font-semibold text-emerald-400">Add</span>
+                    <span> in the top right corner.</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div className="mt-4 flex items-center justify-between gap-2">
+              {isInIframe ? (
+                <button
+                  onClick={handleOpenNewTab}
+                  className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs rounded-xl transition shadow-md flex items-center justify-center gap-1.5"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  <span>Open in New Tab to Enable Install</span>
+                </button>
+              ) : (
+                <button
+                  onClick={handleDismiss}
+                  className="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs rounded-xl transition text-center"
+                >
+                  Got It
+                </button>
+              )}
             </div>
           </div>
         )}
@@ -207,3 +316,4 @@ export const InstallAppPrompt: React.FC<InstallAppPromptProps> = ({ forceShow = 
     </div>
   );
 };
+
