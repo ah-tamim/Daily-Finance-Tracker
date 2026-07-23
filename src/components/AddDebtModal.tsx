@@ -1,15 +1,20 @@
 import React, { useState } from 'react';
-import { DebtItem } from '../types/finance';
-import { X, CreditCard, Calendar, User, DollarSign, FileText, CheckCircle2 } from 'lucide-react';
+import { DebtItem, Wallet } from '../types/finance';
+import { X, CreditCard, Calendar, User, DollarSign, FileText, CheckCircle2, Wallet as WalletIcon } from 'lucide-react';
 
 interface AddDebtModalProps {
   isOpen: boolean;
+  wallets: Wallet[];
   onClose: () => void;
-  onSave: (debtData: Omit<DebtItem, 'id' | 'userId' | 'createdAt'>) => Promise<void>;
+  onSave: (
+    debtData: Omit<DebtItem, 'id' | 'userId' | 'createdAt'>,
+    recordInitialTxInWallet?: boolean
+  ) => Promise<void>;
 }
 
 export const AddDebtModal: React.FC<AddDebtModalProps> = ({
   isOpen,
+  wallets,
   onClose,
   onSave,
 }) => {
@@ -17,6 +22,8 @@ export const AddDebtModal: React.FC<AddDebtModalProps> = ({
   const [type, setType] = useState<'borrowed' | 'lent'>('borrowed'); // borrowed = I owe, lent = someone owes me
   const [totalAmount, setTotalAmount] = useState('');
   const [paidAmount, setPaidAmount] = useState('0');
+  const [walletId, setWalletId] = useState<string>(wallets[0]?.id || '');
+  const [recordInitialTx, setRecordInitialTx] = useState<boolean>(true);
   const [isEmi, setIsEmi] = useState(false);
   const [emiTotalMonths, setEmiTotalMonths] = useState('12');
   const [emiMonthlyAmount, setEmiMonthlyAmount] = useState('');
@@ -103,7 +110,8 @@ export const AddDebtModal: React.FC<AddDebtModalProps> = ({
         lenderBorrower: lenderBorrower.trim() || undefined,
         notes: notes.trim() || undefined,
         status: parsedPaid >= parsedTotal ? 'paid' : 'active',
-      });
+        walletId: walletId || undefined,
+      }, recordInitialTx);
       setIsSaving(false);
       onClose();
     } catch (err: any) {
@@ -227,6 +235,43 @@ export const AddDebtModal: React.FC<AddDebtModalProps> = ({
                 className="w-full theme-input border focus:border-indigo-500 rounded-xl p-3 text-sm font-mono focus:outline-none"
               />
             </div>
+          </div>
+
+          {/* Associated Wallet Selection */}
+          <div className="p-3.5 theme-card border rounded-2xl space-y-2.5">
+            <label className="block text-xs font-bold flex items-center gap-1.5">
+              <WalletIcon className="w-3.5 h-3.5 text-emerald-500" />
+              <span>Link Wallet (Option)</span>
+            </label>
+            
+            <select
+              value={walletId}
+              onChange={(e) => setWalletId(e.target.value)}
+              className="w-full theme-input border focus:border-indigo-500 rounded-xl p-2.5 text-xs focus:outline-none font-medium"
+            >
+              <option value="">-- No specific wallet linked --</option>
+              {wallets.map((w) => (
+                <option key={w.id} value={w.id}>
+                  {w.name} ({w.type})
+                </option>
+              ))}
+            </select>
+
+            {walletId && (
+              <label className="flex items-center gap-2 cursor-pointer pt-1">
+                <input
+                  type="checkbox"
+                  checked={recordInitialTx}
+                  onChange={(e) => setRecordInitialTx(e.target.checked)}
+                  className="w-3.5 h-3.5 accent-emerald-500 rounded"
+                />
+                <span className="text-[11px] theme-text-muted">
+                  {type === 'borrowed' 
+                    ? 'Log initial borrowed amount as Income into this wallet' 
+                    : 'Log initial lent amount as Expense out of this wallet'}
+                </span>
+              </label>
+            )}
           </div>
 
           {/* EMI Toggle Checkbox */}

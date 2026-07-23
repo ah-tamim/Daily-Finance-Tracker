@@ -24,7 +24,13 @@ export interface DebtItem {
   lenderBorrower?: string;
   notes?: string;
   status: 'active' | 'paid';
+  walletId?: string; // Associated wallet ID
   createdAt: number;
+}
+
+export interface CustomCategories {
+  income: string[];
+  expense: string[];
 }
 
 export interface Wallet {

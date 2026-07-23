@@ -3,6 +3,7 @@ import {
   Transaction, 
   TransactionType, 
   Wallet, 
+  CustomCategories,
   DEFAULT_INCOME_CATEGORIES, 
   DEFAULT_EXPENSE_CATEGORIES 
 } from '../types/finance';
@@ -16,7 +17,8 @@ import {
   Tag, 
   FileText, 
   DollarSign,
-  Plus
+  Plus,
+  Settings
 } from 'lucide-react';
 
 interface TransactionModalProps {
@@ -25,6 +27,8 @@ interface TransactionModalProps {
   defaultWalletId?: string;
   initialType?: TransactionType;
   wallets: Wallet[];
+  categories?: CustomCategories;
+  onOpenCategoryManager?: () => void;
   onClose: () => void;
   onSave: (tx: Omit<Transaction, 'id' | 'userId' | 'monthKey' | 'createdAt'>) => Promise<void>;
 }
@@ -35,6 +39,8 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
   defaultWalletId,
   initialType = 'expense',
   wallets,
+  categories,
+  onOpenCategoryManager,
   onClose,
   onSave,
 }) => {
@@ -142,7 +148,9 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
     }
   };
 
-  const availableCategories = type === 'income' ? DEFAULT_INCOME_CATEGORIES : DEFAULT_EXPENSE_CATEGORIES;
+  const availableIncome = categories?.income && categories.income.length > 0 ? categories.income : DEFAULT_INCOME_CATEGORIES;
+  const availableExpense = categories?.expense && categories.expense.length > 0 ? categories.expense : DEFAULT_EXPENSE_CATEGORIES;
+  const availableCategories = type === 'income' ? availableIncome : availableExpense;
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/70 backdrop-blur-sm p-3 sm:p-6">
@@ -294,13 +302,25 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                   <Tag className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
                   <span>Category</span>
                 </label>
-                <button
-                  type="button"
-                  onClick={() => setIsCustomCategory(!isCustomCategory)}
-                  className="text-[11px] text-emerald-600 dark:text-emerald-400 hover:underline font-semibold"
-                >
-                  {isCustomCategory ? 'Select from list' : '+ Add Custom Category'}
-                </button>
+                <div className="flex items-center gap-2">
+                  {onOpenCategoryManager && (
+                    <button
+                      type="button"
+                      onClick={onOpenCategoryManager}
+                      className="text-[11px] text-indigo-500 hover:text-indigo-400 font-semibold flex items-center gap-1"
+                    >
+                      <Settings className="w-3 h-3" />
+                      <span>Edit Categories</span>
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setIsCustomCategory(!isCustomCategory)}
+                    className="text-[11px] text-emerald-600 dark:text-emerald-400 hover:underline font-semibold"
+                  >
+                    {isCustomCategory ? 'Select from list' : '+ One-time Custom'}
+                  </button>
+                </div>
               </div>
 
               {isCustomCategory ? (

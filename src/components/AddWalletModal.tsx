@@ -111,17 +111,38 @@ export const AddWalletModal: React.FC<AddWalletModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-xs font-semibold mb-1.5">
-              Initial Balance (৳)
-            </label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-xs font-semibold">
+                Initial Balance (৳)
+              </label>
+              <span className="text-[10px] theme-text-muted">Starting money in wallet</span>
+            </div>
             <input
               type="number"
               step="any"
               placeholder="0.00"
               value={initialBalance}
               onChange={(e) => setInitialBalance(e.target.value)}
-              className="w-full theme-input border focus:border-emerald-500 rounded-xl p-3 text-sm font-mono text-emerald-600 dark:text-emerald-400 focus:outline-none"
+              className="w-full theme-input border focus:border-emerald-500 rounded-xl p-3 text-sm font-mono font-bold text-emerald-600 dark:text-emerald-400 focus:outline-none"
             />
+            
+            {/* Quick Presets */}
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              {[0, 500, 1000, 5000, 10000, 25000, 50000].map((amt) => (
+                <button
+                  key={amt}
+                  type="button"
+                  onClick={() => setInitialBalance(amt.toString())}
+                  className={`px-2 py-1 text-[11px] font-mono font-semibold rounded-lg border transition ${
+                    parseFloat(initialBalance) === amt
+                      ? 'bg-emerald-600 text-white border-emerald-500'
+                      : 'theme-subtle-btn hover:border-emerald-500/40'
+                  }`}
+                >
+                  ৳{amt.toLocaleString()}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div>

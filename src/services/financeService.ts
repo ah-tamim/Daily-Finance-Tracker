@@ -13,12 +13,23 @@ import {
   writeBatch
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { Wallet, Transaction, DebtItem, BudgetItem, DEFAULT_WALLETS, WalletStats } from '../types/finance';
+import { 
+  Wallet, 
+  Transaction, 
+  DebtItem, 
+  BudgetItem, 
+  DEFAULT_WALLETS, 
+  DEFAULT_INCOME_CATEGORIES, 
+  DEFAULT_EXPENSE_CATEGORIES, 
+  CustomCategories, 
+  WalletStats 
+} from '../types/finance';
 
 const LOCAL_STORAGE_WALLETS_KEY = 'daily_finance_wallets_v3';
 const LOCAL_STORAGE_TRANSACTIONS_KEY = 'daily_finance_transactions_v3';
 const LOCAL_STORAGE_DEBTS_KEY = 'daily_finance_debts_v3';
 const LOCAL_STORAGE_BUDGETS_KEY = 'daily_finance_budgets_v3';
+const LOCAL_STORAGE_CATEGORIES_KEY = 'daily_finance_categories_v3';
 
 // Get month key helper YYYY-MM
 export const getMonthKey = (dateStr: string): string => {
@@ -287,7 +298,8 @@ export const subscribeDebts = (
 
 export const addDebt = async (
   userId: string,
-  debtData: Omit<DebtItem, 'id' | 'userId' | 'createdAt'>
+  debtData: Omit<DebtItem, 'id' | 'userId' | 'createdAt'>,
+  recordInitialTxInWallet: boolean = false
 ) => {
   if (!userId) throw new Error('User not authenticated');
   const debtRef = collection(db, 'users', userId, 'debts');
@@ -297,6 +309,26 @@ export const addDebt = async (
     createdAt: Date.now(),
   };
   const docRef = await addDoc(debtRef, newDebt);
+
+  // If user linked a wallet and requested initial money flow transaction
+  if (recordInitialTxInWallet && debtData.walletId && debtData.totalAmount > 0) {
+    const isBorrowed = debtData.type === 'borrowed';
+    const txType = isBorrowed ? 'income' : 'expense';
+    const category = isBorrowed ? 'Borrowed Funds' : 'Loan Repayment';
+    const desc = isBorrowed 
+      ? `Borrowed funds received: ${debtData.title}${debtData.lenderBorrower ? ` from ${debtData.lenderBorrower}` : ''}`
+      : `Lent funds provided: ${debtData.title}${debtData.lenderBorrower ? ` to ${debtData.lenderBorrower}` : ''}`;
+
+    await addTransaction(userId, {
+      date: new Date().toISOString().slice(0, 10),
+      type: txType,
+      walletId: debtData.walletId,
+      category,
+      description: desc,
+      amount: debtData.totalAmount,
+    });
+  }
+
   return docRef.id;
 };
 
@@ -427,4 +459,62 @@ export const deleteBudget = async (userId: string, budgetId: string) => {
   if (!userId) throw new Error('User not authenticated');
   const docRef = doc(db, 'users', userId, 'budgets', budgetId);
   await deleteDoc(docRef);
+};
+
+// ================= CUSTOM CATEGORY MANAGEMENT ================= //
+
+export const subscribeCustomCategories = (
+  userId: string,
+  onUpdate: (categories: CustomCategories) => void,
+  onError?: (err: any) => void
+) => {
+  if (!userId) return () => {};
+
+  const categoriesDocRef = doc(db, 'users', userId, 'settings', 'categories');
+
+  return onSnapshot(
+    categoriesDocRef,
+    (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.data();
+        const cats: CustomCategories = {
+          income: data.income && Array.isArray(data.income) ? data.income : DEFAULT_INCOME_CATEGORIES,
+          expense: data.expense && Array.isArray(data.expense) ? data.expense : DEFAULT_EXPENSE_CATEGORIES,
+        };
+        localStorage.setItem(`${LOCAL_STORAGE_CATEGORIES_KEY}_${userId}`, JSON.stringify(cats));
+        onUpdate(cats);
+      } else {
+        const initialCats: CustomCategories = {
+          income: DEFAULT_INCOME_CATEGORIES,
+          expense: DEFAULT_EXPENSE_CATEGORIES,
+        };
+        setDoc(categoriesDocRef, initialCats).catch(console.error);
+        onUpdate(initialCats);
+      }
+    },
+    (error) => {
+      console.warn('Firestore categories listener offline/error, fallback to local storage:', error);
+      const cached = localStorage.getItem(`${LOCAL_STORAGE_CATEGORIES_KEY}_${userId}`);
+      if (cached) {
+        try {
+          onUpdate(JSON.parse(cached));
+        } catch {
+          onUpdate({ income: DEFAULT_INCOME_CATEGORIES, expense: DEFAULT_EXPENSE_CATEGORIES });
+        }
+      } else {
+        onUpdate({ income: DEFAULT_INCOME_CATEGORIES, expense: DEFAULT_EXPENSE_CATEGORIES });
+      }
+      if (onError) onError(error);
+    }
+  );
+};
+
+export const saveCustomCategories = async (
+  userId: string,
+  categories: CustomCategories
+) => {
+  if (!userId) throw new Error('User not authenticated');
+  const categoriesDocRef = doc(db, 'users', userId, 'settings', 'categories');
+  await setDoc(categoriesDocRef, categories);
+  localStorage.setItem(`${LOCAL_STORAGE_CATEGORIES_KEY}_${userId}`, JSON.stringify(categories));
 };

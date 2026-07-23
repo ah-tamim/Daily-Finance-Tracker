@@ -8,19 +8,22 @@ import {
   ArrowUpRight, 
   ArrowDownRight, 
   ArrowRightLeft,
-  ChevronRight
+  ChevronRight,
+  Edit2
 } from 'lucide-react';
 
 interface WalletListProps {
   walletStats: WalletStats[];
   onSelectWallet: (wallet: Wallet) => void;
   onOpenAddWalletModal: () => void;
+  onOpenEditInitialBalance?: (wallet: Wallet) => void;
 }
 
 export const WalletList: React.FC<WalletListProps> = ({
   walletStats,
   onSelectWallet,
   onOpenAddWalletModal,
+  onOpenEditInitialBalance,
 }) => {
   const getWalletTypeIcon = (type: string) => {
     switch (type) {
@@ -103,9 +106,26 @@ export const WalletList: React.FC<WalletListProps> = ({
 
               {/* Balances breakdown */}
               <div className="pl-1.5 space-y-1 border-t border-slate-200 dark:border-slate-800/80 pt-2 text-[11px]">
-                <div className="flex items-center justify-between theme-text-muted">
-                  <span>Initial:</span>
-                  <span className="font-mono">৳{initialBalance.toLocaleString()}</span>
+                <div className="flex items-center justify-between theme-text-muted group/init">
+                  <span className="flex items-center gap-1">
+                    <span>Initial:</span>
+                    {onOpenEditInitialBalance && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onOpenEditInitialBalance(wallet);
+                        }}
+                        className="p-1 rounded hover:bg-emerald-500/15 text-slate-400 hover:text-emerald-500 transition"
+                        title="Edit Initial Starting Balance"
+                      >
+                        <Edit2 className="w-2.5 h-2.5" />
+                      </button>
+                    )}
+                  </span>
+                  <span className="font-mono font-bold theme-text">
+                    ৳{initialBalance.toLocaleString()}
+                  </span>
                 </div>
 
                 <div className="flex items-center justify-between theme-text-muted">

@@ -10,13 +10,18 @@ import {
   WalletStats,
   DebtItem,
   BudgetItem,
-  TransactionType
+  TransactionType,
+  CustomCategories,
+  DEFAULT_INCOME_CATEGORIES,
+  DEFAULT_EXPENSE_CATEGORIES
 } from './types/finance';
 import { 
   subscribeWallets, 
   subscribeTransactions, 
   subscribeDebts,
   subscribeBudgets,
+  subscribeCustomCategories,
+  saveCustomCategories,
   addCustomWallet, 
   updateWalletInitialBalance, 
   addTransaction, 
@@ -51,6 +56,8 @@ import { AddDebtModal } from './components/AddDebtModal';
 import { DebtListModal } from './components/DebtListModal';
 import { AddBudgetModal } from './components/AddBudgetModal';
 import { BudgetListModal } from './components/BudgetListModal';
+import { CategoryManagerModal } from './components/CategoryManagerModal';
+import { EditInitialBalanceModal } from './components/EditInitialBalanceModal';
 import { ProfileModal } from './components/ProfileModal';
 import { AuthModal } from './components/AuthModal';
 import { InstallAppPrompt } from './components/InstallAppPrompt';
@@ -127,6 +134,17 @@ export default function App() {
   const [isBudgetListModalOpen, setIsBudgetListModalOpen] = useState<boolean>(false);
   const [isAddBudgetModalOpen, setIsAddBudgetModalOpen] = useState<boolean>(false);
 
+  // Custom Categories State
+  const [customCategories, setCustomCategories] = useState<CustomCategories>({
+    income: DEFAULT_INCOME_CATEGORIES,
+    expense: DEFAULT_EXPENSE_CATEGORIES,
+  });
+  const [isCategoryManagerModalOpen, setIsCategoryManagerModalOpen] = useState<boolean>(false);
+
+  // Edit Initial Balance state
+  const [editingInitialWallet, setEditingInitialWallet] = useState<Wallet | null>(null);
+  const [isEditInitialModalOpen, setIsEditInitialModalOpen] = useState<boolean>(false);
+
   // 1. Subscribe to Firebase Auth
   useEffect(() => {
     const unsubscribe = subscribeToAuth((currentUser) => {
@@ -182,6 +200,10 @@ export default function App() {
       const cachedBudgets = localStorage.getItem('daily_finance_budgets_v3_guest');
       if (cachedBudgets) {
         try { setBudgets(JSON.parse(cachedBudgets)); } catch {}
+      }
+      const cachedCategories = localStorage.getItem('daily_finance_categories_v3_guest');
+      if (cachedCategories) {
+        try { setCustomCategories(JSON.parse(cachedCategories)); } catch {}
       }
     }
   }, [user]);
@@ -248,11 +270,19 @@ export default function App() {
       }
     );
 
+    const unsubsCategories = subscribeCustomCategories(
+      user.uid,
+      (updatedCategories) => {
+        setCustomCategories(updatedCategories);
+      }
+    );
+
     return () => {
       unsubsWallets();
       unsubsTransactions();
       unsubsDebts();
       unsubsBudgets();
+      unsubsCategories();
     };
   }, [user]);
 
@@ -381,9 +411,12 @@ export default function App() {
     }
   };
 
-  const handleSaveDebt = async (debtData: Omit<DebtItem, 'id' | 'userId' | 'createdAt'>) => {
+  const handleSaveDebt = async (
+    debtData: Omit<DebtItem, 'id' | 'userId' | 'createdAt'>,
+    recordInitialTx: boolean = false
+  ) => {
     if (user?.uid) {
-      await addDebt(user.uid, debtData);
+      await addDebt(user.uid, debtData, recordInitialTx);
     } else {
       const newDebt: DebtItem = {
         id: `debt_${Date.now()}`,
@@ -392,6 +425,38 @@ export default function App() {
         ...debtData,
       };
       setDebts((prev) => [newDebt, ...prev]);
+
+      if (recordInitialTx && debtData.walletId && debtData.totalAmount > 0) {
+        const isBorrowed = debtData.type === 'borrowed';
+        const txType = isBorrowed ? 'income' : 'expense';
+        const category = isBorrowed ? 'Borrowed Funds' : 'Loan Repayment';
+        const desc = isBorrowed 
+          ? `Borrowed funds received: ${debtData.title}${debtData.lenderBorrower ? ` from ${debtData.lenderBorrower}` : ''}`
+          : `Lent funds provided: ${debtData.title}${debtData.lenderBorrower ? ` to ${debtData.lenderBorrower}` : ''}`;
+
+        const newTx: Transaction = {
+          id: `tx_${Date.now()}`,
+          userId: 'demo',
+          date: new Date().toISOString().slice(0, 10),
+          monthKey: new Date().toISOString().slice(0, 7),
+          type: txType,
+          walletId: debtData.walletId,
+          category,
+          description: desc,
+          amount: debtData.totalAmount,
+          createdAt: Date.now(),
+        };
+        setTransactions((prev) => [newTx, ...prev]);
+      }
+    }
+  };
+
+  const handleSaveCategories = async (newCategories: CustomCategories) => {
+    if (user?.uid) {
+      await saveCustomCategories(user.uid, newCategories);
+    } else {
+      setCustomCategories(newCategories);
+      localStorage.setItem('daily_finance_categories_v3_guest', JSON.stringify(newCategories));
     }
   };
 
@@ -516,6 +581,7 @@ export default function App() {
           onOpenAddWalletModal={() => setIsAddWalletModalOpen(true)}
           onOpenBudgetModal={() => setIsBudgetListModalOpen(true)}
           onOpenDebtModal={() => setIsDebtListModalOpen(true)}
+          onOpenCategoryManager={() => setIsCategoryManagerModalOpen(true)}
         />
 
         {/* Wallets Grid with Balance Breakdown */}
@@ -523,6 +589,10 @@ export default function App() {
           walletStats={walletStats}
           onSelectWallet={(w) => setSelectedDetailWallet(w)}
           onOpenAddWalletModal={() => setIsAddWalletModalOpen(true)}
+          onOpenEditInitialBalance={(w) => {
+            setEditingInitialWallet(w);
+            setIsEditInitialModalOpen(true);
+          }}
         />
 
         {/* Recharts Analytics Breakdown */}
@@ -563,6 +633,7 @@ export default function App() {
         walletStats={selectedWalletStats}
         transactions={transactions}
         allWallets={wallets}
+        debts={debts}
         onClose={() => setSelectedDetailWallet(null)}
         onUpdateInitialBalance={handleUpdateInitialBalance}
         onOpenQuickEntryForWallet={(wId) => {
@@ -583,6 +654,8 @@ export default function App() {
         defaultWalletId={quickEntryWalletId}
         initialType={quickEntryKind}
         wallets={wallets}
+        categories={customCategories}
+        onOpenCategoryManager={() => setIsCategoryManagerModalOpen(true)}
         onClose={() => {
           setIsTransactionModalOpen(false);
           setEditingTransaction(null);
@@ -635,6 +708,7 @@ export default function App() {
 
       <AddDebtModal
         isOpen={isAddDebtModalOpen}
+        wallets={wallets}
         onClose={() => setIsAddDebtModalOpen(false)}
         onSave={handleSaveDebt}
       />
@@ -651,8 +725,26 @@ export default function App() {
 
       <AddBudgetModal
         isOpen={isAddBudgetModalOpen}
+        categories={customCategories}
         onClose={() => setIsAddBudgetModalOpen(false)}
         onSave={handleSaveBudget}
+      />
+
+      <CategoryManagerModal
+        isOpen={isCategoryManagerModalOpen}
+        onClose={() => setIsCategoryManagerModalOpen(false)}
+        categories={customCategories}
+        onSaveCategories={handleSaveCategories}
+      />
+
+      <EditInitialBalanceModal
+        isOpen={isEditInitialModalOpen}
+        wallet={editingInitialWallet}
+        onClose={() => {
+          setIsEditInitialModalOpen(false);
+          setEditingInitialWallet(null);
+        }}
+        onSave={handleUpdateInitialBalance}
       />
 
       <ProfileModal

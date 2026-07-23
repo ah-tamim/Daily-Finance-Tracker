@@ -6,7 +6,8 @@ import {
   ArrowRightLeft, 
   Wallet, 
   PieChart, 
-  CreditCard 
+  CreditCard,
+  Tag
 } from 'lucide-react';
 import { TransactionType } from '../types/finance';
 
@@ -15,6 +16,7 @@ interface QuickEntryBarProps {
   onOpenAddWalletModal: () => void;
   onOpenBudgetModal: () => void;
   onOpenDebtModal: () => void;
+  onOpenCategoryManager?: () => void;
 }
 
 export const QuickEntryBar: React.FC<QuickEntryBarProps> = ({
@@ -22,6 +24,7 @@ export const QuickEntryBar: React.FC<QuickEntryBarProps> = ({
   onOpenAddWalletModal,
   onOpenBudgetModal,
   onOpenDebtModal,
+  onOpenCategoryManager,
 }) => {
   return (
     <div className="theme-card border rounded-xl p-3.5 shadow-xs">
@@ -37,7 +40,7 @@ export const QuickEntryBar: React.FC<QuickEntryBarProps> = ({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-2">
         {/* Add Expense Button */}
         <button
           onClick={() => onOpenTransactionWithKind('expense')}
@@ -109,6 +112,20 @@ export const QuickEntryBar: React.FC<QuickEntryBarProps> = ({
           </div>
           <span>+ Debt/Loan</span>
         </button>
+
+        {/* Categories Manager Button */}
+        {onOpenCategoryManager && (
+          <button
+            onClick={onOpenCategoryManager}
+            className="flex items-center justify-center gap-2 px-3 py-2.5 bg-violet-500/10 hover:bg-violet-500/20 text-violet-600 dark:text-violet-400 border border-violet-500/25 rounded-xl text-xs font-bold transition active:scale-95 shadow-2xs group"
+            title="Edit Custom Categories"
+          >
+            <div className="p-1 rounded-lg bg-violet-500/20 text-violet-600 dark:text-violet-400 group-hover:scale-110 transition">
+              <Tag className="w-3.5 h-3.5" />
+            </div>
+            <span>Categories</span>
+          </button>
+        )}
       </div>
     </div>
   );

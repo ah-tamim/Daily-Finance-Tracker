@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
-import { BudgetItem, DEFAULT_EXPENSE_CATEGORIES } from '../types/finance';
+import { BudgetItem, CustomCategories, DEFAULT_EXPENSE_CATEGORIES } from '../types/finance';
 import { X, PieChart, DollarSign, Calendar, AlertCircle } from 'lucide-react';
 
 interface AddBudgetModalProps {
   isOpen: boolean;
+  categories?: CustomCategories;
   onClose: () => void;
   onSave: (budgetData: Omit<BudgetItem, 'id' | 'userId' | 'createdAt'>) => Promise<void>;
 }
 
 export const AddBudgetModal: React.FC<AddBudgetModalProps> = ({
   isOpen,
+  categories,
   onClose,
   onSave,
 }) => {
@@ -21,7 +23,8 @@ export const AddBudgetModal: React.FC<AddBudgetModalProps> = ({
 
   if (!isOpen) return null;
 
-  const categoriesOptions = ['All Expenses', ...DEFAULT_EXPENSE_CATEGORIES];
+  const expenseList = categories?.expense && categories.expense.length > 0 ? categories.expense : DEFAULT_EXPENSE_CATEGORIES;
+  const categoriesOptions = ['All Expenses', ...expenseList];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

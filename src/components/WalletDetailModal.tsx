@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Wallet, Transaction, WalletStats } from '../types/finance';
+import { Wallet, Transaction, WalletStats, DebtItem } from '../types/finance';
 import { 
   X, 
   Edit2, 
@@ -18,6 +18,7 @@ interface WalletDetailModalProps {
   walletStats: WalletStats | undefined;
   transactions: Transaction[];
   allWallets: Wallet[];
+  debts?: DebtItem[];
   onClose: () => void;
   onUpdateInitialBalance: (walletId: string, newBalance: number) => Promise<void>;
   onOpenQuickEntryForWallet: (walletId: string) => void;
@@ -30,6 +31,7 @@ export const WalletDetailModal: React.FC<WalletDetailModalProps> = ({
   walletStats,
   transactions,
   allWallets,
+  debts = [],
   onClose,
   onUpdateInitialBalance,
   onOpenQuickEntryForWallet,
@@ -46,6 +48,9 @@ export const WalletDetailModal: React.FC<WalletDetailModalProps> = ({
   const walletTransactions = transactions.filter(
     (tx) => tx.walletId === wallet.id || tx.targetWalletId === wallet.id
   );
+
+  // Filter active debts linked to this wallet
+  const walletDebts = debts.filter((d) => d.walletId === wallet.id && d.status === 'active');
 
   const walletMap = new Map<string, string>();
   allWallets.forEach((w) => walletMap.set(w.id, w.name));
@@ -114,44 +119,70 @@ export const WalletDetailModal: React.FC<WalletDetailModalProps> = ({
               </div>
 
               {/* Initial Balance */}
-              <div className="theme-input border p-3 rounded-xl flex items-center justify-between gap-3">
-                <div className="text-left">
-                  <span className="text-[10px] theme-text-muted uppercase font-semibold block">
-                    Initial Balance
-                  </span>
-                  {isEditingInitial ? (
-                    <div className="flex items-center gap-1 mt-1">
-                      <span className="theme-text-muted text-xs font-mono">৳</span>
+              <div className="theme-input border p-3.5 rounded-xl flex flex-col justify-center gap-1 min-w-[200px]">
+                <span className="text-[10px] theme-text-muted uppercase font-extrabold tracking-wider block">
+                  Initial Starting Balance
+                </span>
+                {isEditingInitial ? (
+                  <div className="space-y-2 mt-1">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-emerald-500 font-bold font-mono text-sm">৳</span>
                       <input
                         type="number"
                         step="any"
                         value={initialInput}
                         onChange={(e) => setInitialInput(e.target.value)}
-                        className="w-24 theme-input border border-emerald-500 rounded px-2 py-0.5 text-xs font-mono focus:outline-none"
+                        className="w-28 theme-input border-2 border-emerald-500 rounded-lg px-2.5 py-1 text-xs font-mono font-bold focus:outline-none"
+                        autoFocus
                       />
                       <button
                         onClick={handleSaveInitial}
                         disabled={isSaving}
-                        className="p-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded transition"
+                        className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-lg transition flex items-center gap-1"
                       >
                         <Check className="w-3.5 h-3.5" />
+                        <span>Save</span>
                       </button>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <span className="text-sm font-bold font-mono">
-                        ৳{walletStats.initialBalance.toLocaleString()}
-                      </span>
                       <button
-                        onClick={() => setIsEditingInitial(true)}
-                        className="theme-text-muted hover:text-emerald-600 dark:hover:text-emerald-400 transition"
-                        title="Edit initial balance"
+                        onClick={() => setIsEditingInitial(false)}
+                        className="px-2 py-1 text-[11px] theme-text-muted hover:text-slate-800 dark:hover:text-slate-200"
                       >
-                        <Edit2 className="w-3.5 h-3.5" />
+                        Cancel
                       </button>
                     </div>
-                  )}
-                </div>
+
+                    {/* Quick Presets */}
+                    <div className="flex flex-wrap gap-1">
+                      {[0, 1000, 5000, 10000, 25000, 50000].map((amt) => (
+                        <button
+                          key={amt}
+                          type="button"
+                          onClick={() => setInitialInput(amt.toString())}
+                          className="px-1.5 py-0.5 text-[10px] font-mono font-semibold rounded bg-slate-200 dark:bg-slate-800 hover:bg-emerald-500 hover:text-white transition"
+                        >
+                          ৳{amt >= 1000 ? `${amt / 1000}k` : amt}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between gap-3 mt-0.5">
+                    <span className="text-sm font-black font-mono">
+                      ৳{walletStats.initialBalance.toLocaleString()}
+                    </span>
+                    <button
+                      onClick={() => {
+                        setInitialInput(walletStats.initialBalance.toString());
+                        setIsEditingInitial(true);
+                      }}
+                      className="px-2 py-1 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-bold text-xs rounded-lg border border-emerald-500/20 transition flex items-center gap-1"
+                      title="Edit initial balance"
+                    >
+                      <Edit2 className="w-3 h-3" />
+                      <span>Edit</span>
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -180,6 +211,49 @@ export const WalletDetailModal: React.FC<WalletDetailModalProps> = ({
             </div>
 
           </div>
+
+          {/* Linked Debts & EMIs for this Wallet */}
+          {walletDebts.length > 0 && (
+            <div className="p-4 theme-card border rounded-2xl space-y-3 bg-amber-500/5 border-amber-500/20">
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-extrabold text-amber-600 dark:text-amber-400 flex items-center gap-1.5 uppercase tracking-wider">
+                  <CreditCard className="w-4 h-4" />
+                  <span>Linked Active Debts / EMIs ({walletDebts.length})</span>
+                </h4>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {walletDebts.map((d) => {
+                  const remaining = Math.max(0, d.totalAmount - d.paidAmount);
+                  return (
+                    <div key={d.id} className="p-2.5 theme-input border rounded-xl flex items-center justify-between text-xs">
+                      <div>
+                        <div className="font-bold flex items-center gap-1">
+                          <span>{d.title}</span>
+                          {d.isEmi && (
+                            <span className="text-[9px] px-1.5 py-0.2 bg-indigo-500/10 text-indigo-500 rounded font-bold">EMI</span>
+                          )}
+                        </div>
+                        <span className="text-[10px] theme-text-muted">
+                          {d.type === 'borrowed' ? 'I Owe' : 'Owed to Me'} {d.lenderBorrower ? `• ${d.lenderBorrower}` : ''}
+                        </span>
+                      </div>
+                      <div className="text-right font-mono font-bold">
+                        <span className={d.type === 'borrowed' ? 'text-rose-500' : 'text-teal-500'}>
+                          ৳{remaining.toLocaleString()}
+                        </span>
+                        {d.isEmi && d.emiMonthlyAmount && (
+                          <div className="text-[9px] theme-text-muted font-sans font-normal">
+                            ৳{d.emiMonthlyAmount}/mo
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* History Header & Add Entry Shortcut */}
           <div className="flex items-center justify-between">
