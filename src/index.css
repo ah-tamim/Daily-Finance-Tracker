@@ -1,0 +1,172 @@
+@import "tailwindcss";
+
+@layer base {
+  :root, [data-theme="emerald_light"] {
+    color-scheme: light;
+    --app-bg: #f8fafc;
+    --app-surface: #ffffff;
+    --app-surface-hover: #f1f5f9;
+    --app-header: #ffffff;
+    --app-border: #e2e8f0;
+    --app-border-subtle: #f1f5f9;
+    --app-text-main: #0f172a;
+    --app-text-muted: #64748b;
+    --app-accent: #059669;
+    --app-accent-bg: #ecfdf5;
+    --app-accent-border: #a7f3d0;
+    --app-input-bg: #ffffff;
+    --app-modal-bg: #ffffff;
+    --app-table-header: #f8fafc;
+    --app-table-hover: #f1f5f9;
+  }
+
+  [data-theme="nordic"] {
+    color-scheme: light;
+    --app-bg: #f1f5f9;
+    --app-surface: #ffffff;
+    --app-surface-hover: #f8fafc;
+    --app-header: #ffffff;
+    --app-border: #cbd5e1;
+    --app-border-subtle: #e2e8f0;
+    --app-text-main: #0f172a;
+    --app-text-muted: #475569;
+    --app-accent: #0284c7;
+    --app-accent-bg: #f0f9ff;
+    --app-accent-border: #bae6fd;
+    --app-input-bg: #ffffff;
+    --app-modal-bg: #ffffff;
+    --app-table-header: #f8fafc;
+    --app-table-hover: #f1f5f9;
+  }
+
+  [data-theme="emerald"] {
+    color-scheme: dark;
+    --app-bg: #020617;
+    --app-surface: #0f172a;
+    --app-surface-hover: #1e293b;
+    --app-header: #020617;
+    --app-border: #1e293b;
+    --app-border-subtle: #0f172a;
+    --app-text-main: #f8fafc;
+    --app-text-muted: #94a3b8;
+    --app-accent: #10b981;
+    --app-accent-bg: rgba(16, 185, 129, 0.15);
+    --app-accent-border: rgba(16, 185, 129, 0.25);
+    --app-input-bg: #020617;
+    --app-modal-bg: #0f172a;
+    --app-table-header: #020617;
+    --app-table-hover: #1e293b;
+  }
+
+  [data-theme="obsidian"] {
+    color-scheme: dark;
+    --app-bg: #070a12;
+    --app-surface: #0f172a;
+    --app-surface-hover: #1e293b;
+    --app-header: #070a12;
+    --app-border: #1e293b;
+    --app-border-subtle: #0f172a;
+    --app-text-main: #f8fafc;
+    --app-text-muted: #94a3b8;
+    --app-accent: #3b82f6;
+    --app-accent-bg: rgba(59, 130, 246, 0.15);
+    --app-accent-border: rgba(59, 130, 246, 0.25);
+    --app-input-bg: #030712;
+    --app-modal-bg: #0f172a;
+    --app-table-header: #030712;
+    --app-table-hover: #1e293b;
+  }
+
+  [data-theme="violet"] {
+    color-scheme: dark;
+    --app-bg: #0a051b;
+    --app-surface: #140b2e;
+    --app-surface-hover: #201344;
+    --app-header: #0a051b;
+    --app-border: #281754;
+    --app-border-subtle: #140b2e;
+    --app-text-main: #f8fafc;
+    --app-text-muted: #a78bfa;
+    --app-accent: #8b5cf6;
+    --app-accent-bg: rgba(139, 92, 246, 0.15);
+    --app-accent-border: rgba(139, 92, 246, 0.25);
+    --app-input-bg: #080317;
+    --app-modal-bg: #140b2e;
+    --app-table-header: #080317;
+    --app-table-hover: #201344;
+  }
+
+  [data-theme="amber"] {
+    color-scheme: dark;
+    --app-bg: #0e0a05;
+    --app-surface: #1a120a;
+    --app-surface-hover: #281c10;
+    --app-header: #0e0a05;
+    --app-border: #332313;
+    --app-border-subtle: #1a120a;
+    --app-text-main: #fffbeb;
+    --app-text-muted: #fcd34d;
+    --app-accent: #f59e0b;
+    --app-accent-bg: rgba(245, 158, 11, 0.15);
+    --app-accent-border: rgba(245, 158, 11, 0.25);
+    --app-input-bg: #0a0703;
+    --app-modal-bg: #1a120a;
+    --app-table-header: #0a0703;
+    --app-table-hover: #281c10;
+  }
+}
+
+body {
+  background-color: var(--app-bg);
+  color: var(--app-text-main);
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.theme-card {
+  background-color: var(--app-surface);
+  border-color: var(--app-border);
+  color: var(--app-text-main);
+}
+
+.theme-modal {
+  background-color: var(--app-modal-bg);
+  border-color: var(--app-border);
+  color: var(--app-text-main);
+}
+
+.theme-header {
+  background-color: var(--app-header);
+  border-color: var(--app-border);
+  color: var(--app-text-main);
+}
+
+.theme-input {
+  background-color: var(--app-input-bg);
+  border-color: var(--app-border);
+  color: var(--app-text-main);
+}
+
+.theme-input option {
+  background-color: var(--app-modal-bg);
+  color: var(--app-text-main);
+}
+
+.theme-text {
+  color: var(--app-text-main);
+}
+
+.theme-text-muted {
+  color: var(--app-text-muted);
+}
+
+.theme-subtle-btn {
+  background-color: var(--app-surface);
+  border-color: var(--app-border);
+  color: var(--app-text-main);
+}
+
+.theme-subtle-btn:hover {
+  background-color: var(--app-surface-hover);
+}
+
+

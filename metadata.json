@@ -1,0 +1,6 @@
+{
+  "name": "Daily Finance Tracker",
+  "description": "Daily finance tracking web application with Google account login, multi-wallet management, expense and income entry, inter-wallet transfers, visual analytics, offline support, and XML export.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
