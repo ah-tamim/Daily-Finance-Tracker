@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { DebtItem, Wallet } from '../types/finance';
+import { getDebtAlerts, DebtAlert } from '../utils/debtAlerts';
 import { 
   CreditCard, 
   X, 
@@ -12,7 +13,10 @@ import {
   ArrowDownLeft, 
   Wallet as WalletIcon,
   Clock,
-  Sparkles
+  Sparkles,
+  BellRing,
+  AlertTriangle,
+  DollarSign
 } from 'lucide-react';
 
 interface DebtListModalProps {
@@ -23,6 +27,7 @@ interface DebtListModalProps {
   onOpenAddModal: () => void;
   onPayInstallment: (debt: DebtItem, amount: number, walletId?: string) => Promise<void>;
   onDeleteDebt: (debtId: string) => Promise<void>;
+  initialPayingDebt?: DebtItem | null;
 }
 
 export const DebtListModal: React.FC<DebtListModalProps> = ({
@@ -33,15 +38,24 @@ export const DebtListModal: React.FC<DebtListModalProps> = ({
   onOpenAddModal,
   onPayInstallment,
   onDeleteDebt,
+  initialPayingDebt,
 }) => {
-  const [filter, setFilter] = useState<'all' | 'borrowed' | 'lent' | 'active' | 'paid'>('all');
+  const [filter, setFilter] = useState<'all' | 'borrowed' | 'lent' | 'active' | 'paid' | 'alerts'>('all');
   const [payingDebt, setPayingDebt] = useState<DebtItem | null>(null);
   const [paymentAmount, setPaymentAmount] = useState<string>('');
   const [selectedWalletId, setSelectedWalletId] = useState<string>(wallets[0]?.id || '');
   const [isSubmittingPay, setIsSubmittingPay] = useState<boolean>(false);
   const [msg, setMsg] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
 
+  useEffect(() => {
+    if (initialPayingDebt) {
+      handleOpenPayModal(initialPayingDebt);
+    }
+  }, [initialPayingDebt]);
+
   if (!isOpen) return null;
+
+  const debtAlerts = getDebtAlerts(debts);
 
   // Totals calculation
   const totalBorrowedActive = debts
@@ -207,6 +221,19 @@ export const DebtListModal: React.FC<DebtListModalProps> = ({
             All ({debts.length})
           </button>
           <button
+            onClick={() => setFilter('alerts')}
+            className={`px-3 py-1.5 rounded-xl border transition flex items-center gap-1.5 ${
+              filter === 'alerts' 
+                ? 'bg-rose-600 text-white border-rose-600' 
+                : debtAlerts.length > 0 
+                  ? 'bg-rose-500/10 border-rose-500/30 text-rose-600 dark:text-rose-400 font-bold' 
+                  : 'theme-subtle-btn'
+            }`}
+          >
+            <BellRing className="w-3.5 h-3.5" />
+            <span>Reminders &amp; Alerts ({debtAlerts.length})</span>
+          </button>
+          <button
             onClick={() => setFilter('borrowed')}
             className={`px-3 py-1.5 rounded-xl border transition ${
               filter === 'borrowed' ? 'bg-rose-600 text-white border-rose-600' : 'theme-subtle-btn'
@@ -242,7 +269,52 @@ export const DebtListModal: React.FC<DebtListModalProps> = ({
 
         {/* Debt List Container */}
         <div className="p-6 space-y-3 max-h-[50vh] overflow-y-auto">
-          {filteredDebts.length === 0 ? (
+          {filter === 'alerts' ? (
+            debtAlerts.length === 0 ? (
+              <div className="text-center py-12 border border-dashed rounded-3xl theme-card space-y-3">
+                <BellRing className="w-10 h-10 mx-auto theme-text-muted opacity-40 text-emerald-500" />
+                <p className="text-sm font-bold theme-text">All Clear! No Active Debt Alerts</p>
+                <p className="text-xs theme-text-muted max-w-sm mx-auto">
+                  Alerts trigger every 3 days for taken &amp; lent money, as well as before EMI and clearance due dates.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {debtAlerts.map((alert) => (
+                  <div
+                    key={alert.id}
+                    className={`p-4 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+                      alert.severity === 'urgent'
+                        ? 'bg-rose-500/10 border-rose-500/30'
+                        : 'bg-amber-500/10 border-amber-500/30'
+                    }`}
+                  >
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-extrabold text-sm">{alert.title}</span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full font-mono font-bold bg-slate-800 text-white">
+                          {alert.debt.type === 'borrowed' ? 'Taken' : 'Lent'}
+                        </span>
+                      </div>
+                      <p className="text-xs theme-text font-medium">{alert.message}</p>
+                      <div className="flex items-center gap-3 text-[10px] theme-text-muted font-mono pt-1">
+                        <span>Active Days: {alert.daysActive}</span>
+                        {alert.dueDateStr && <span>Due Date: {alert.dueDateStr}</span>}
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => handleOpenPayModal(alert.debt)}
+                      className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl transition shadow-sm shrink-0 flex items-center justify-center gap-1.5"
+                    >
+                      <DollarSign className="w-4 h-4" />
+                      <span>{alert.debt.type === 'borrowed' ? 'Pay Installment' : 'Record Received'}</span>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )
+          ) : filteredDebts.length === 0 ? (
             <div className="text-center py-12 border border-dashed rounded-3xl theme-card space-y-3">
               <CreditCard className="w-10 h-10 mx-auto theme-text-muted opacity-40" />
               <p className="text-sm font-bold theme-text">No Debt or EMI records found</p>
