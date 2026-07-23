@@ -40,28 +40,30 @@ import {
   deleteBudget
 } from './services/financeService';
 
-import { Header } from './components/Header';
-import { SummaryCards } from './components/SummaryCards';
-import { QuickEntryBar } from './components/QuickEntryBar';
-import { WalletList } from './components/WalletList';
-import { WalletDetailModal } from './components/WalletDetailModal';
-import { TransactionModal } from './components/TransactionModal';
-import { TransactionHistory } from './components/TransactionHistory';
-import { AnalyticsCharts } from './components/AnalyticsCharts';
-import { AddWalletModal } from './components/AddWalletModal';
-import { ExportModal } from './components/ExportModal';
-import { CleanupModal } from './components/CleanupModal';
-import { ThemeModal } from './components/ThemeModal';
-import { AddDebtModal } from './components/AddDebtModal';
-import { DebtListModal } from './components/DebtListModal';
-import { AddBudgetModal } from './components/AddBudgetModal';
-import { BudgetListModal } from './components/BudgetListModal';
-import { CategoryManagerModal } from './components/CategoryManagerModal';
-import { EditInitialBalanceModal } from './components/EditInitialBalanceModal';
-import { ProfileModal } from './components/ProfileModal';
-import { AuthModal } from './components/AuthModal';
-import { InstallAppPrompt } from './components/InstallAppPrompt';
-import { DebtAlertBanner } from './components/DebtAlertBanner';
+import { 
+  Header,
+  SummaryCards,
+  QuickEntryBar,
+  WalletList,
+  WalletDetailModal,
+  TransactionModal,
+  TransactionHistory,
+  AnalyticsCharts,
+  AddWalletModal,
+  ExportModal,
+  CleanupModal,
+  ThemeModal,
+  AddDebtModal,
+  DebtListModal,
+  AddBudgetModal,
+  BudgetListModal,
+  CategoryManagerModal,
+  EditInitialBalanceModal,
+  ProfileModal,
+  AuthModal,
+  InstallAppPrompt,
+  DebtAlertBanner
+} from './components';
 import { getDebtAlerts } from './utils/debtAlerts';
 import { getStoredTheme, applyTheme, ThemeId } from './utils/theme';
 
