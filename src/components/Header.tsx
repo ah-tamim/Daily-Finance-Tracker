@@ -15,7 +15,8 @@ import {
   Layers,
   Palette,
   CreditCard,
-  PieChart
+  PieChart,
+  Smartphone
 } from 'lucide-react';
 
 interface HeaderProps {
@@ -32,6 +33,7 @@ interface HeaderProps {
   onOpenBudgetModal: () => void;
   onOpenProfileModal?: () => void;
   onOpenAuthModal?: () => void;
+  onOpenInstallModal?: () => void;
   activeDebtCount?: number;
 }
 
@@ -49,6 +51,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenBudgetModal,
   onOpenProfileModal,
   onOpenAuthModal,
+  onOpenInstallModal,
   activeDebtCount = 0,
 }) => {
   const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
@@ -198,6 +201,17 @@ export const Header: React.FC<HeaderProps> = ({
             <Palette className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
             <span>Theme</span>
           </button>
+
+          {onOpenInstallModal && (
+            <button
+              onClick={onOpenInstallModal}
+              className="flex items-center gap-1 px-2.5 py-1 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 rounded-lg text-xs font-semibold transition shadow-xs"
+              title="Install Web App on Mobile / Desktop"
+            >
+              <Smartphone className="w-3.5 h-3.5 text-emerald-500" />
+              <span>Install App</span>
+            </button>
+          )}
 
           <button
             onClick={onOpenCleanupModal}

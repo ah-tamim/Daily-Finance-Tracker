@@ -51,6 +51,7 @@ import { AddBudgetModal } from './components/AddBudgetModal';
 import { BudgetListModal } from './components/BudgetListModal';
 import { ProfileModal } from './components/ProfileModal';
 import { AuthModal } from './components/AuthModal';
+import { InstallAppPrompt } from './components/InstallAppPrompt';
 import { getStoredTheme, applyTheme, ThemeId } from './utils/theme';
 
 export default function App() {
@@ -63,6 +64,7 @@ export default function App() {
   const [isThemeModalOpen, setIsThemeModalOpen] = useState<boolean>(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState<boolean>(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
+  const [isInstallModalOpen, setIsInstallModalOpen] = useState<boolean>(false);
 
   useEffect(() => {
     applyTheme(currentTheme);
@@ -481,6 +483,7 @@ export default function App() {
         onOpenBudgetModal={() => setIsBudgetListModalOpen(true)}
         onOpenProfileModal={() => setIsProfileModalOpen(true)}
         onOpenAuthModal={() => setIsAuthModalOpen(true)}
+        onOpenInstallModal={() => setIsInstallModalOpen(true)}
         activeDebtCount={debts.filter((d) => d.status === 'active').length}
       />
 
@@ -650,6 +653,11 @@ export default function App() {
       <AuthModal
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
+      />
+
+      <InstallAppPrompt
+        forceShow={isInstallModalOpen}
+        onClose={() => setIsInstallModalOpen(false)}
       />
 
     </div>

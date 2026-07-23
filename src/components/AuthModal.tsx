@@ -223,9 +223,23 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             
             {/* Error & Success Feedback Banners */}
             {error && (
-              <div className="p-3 bg-rose-500/10 border border-rose-500/25 text-rose-600 dark:text-rose-400 rounded-xl text-xs flex items-start gap-2">
-                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-                <span>{error}</span>
+              <div className="p-3 bg-rose-500/10 border border-rose-500/25 text-rose-600 dark:text-rose-400 rounded-xl text-xs flex flex-col gap-2">
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                  <span className="leading-relaxed">{error}</span>
+                </div>
+                {(error.includes('Firebase') || error.includes('not enabled')) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onClose();
+                      resetForm();
+                    }}
+                    className="mt-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-bold text-[11px] self-start transition shadow-sm"
+                  >
+                    Continue as Guest / Offline Mode →
+                  </button>
+                )}
               </div>
             )}
 
