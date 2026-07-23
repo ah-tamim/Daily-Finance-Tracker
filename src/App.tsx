@@ -61,6 +61,8 @@ import { EditInitialBalanceModal } from './components/EditInitialBalanceModal';
 import { ProfileModal } from './components/ProfileModal';
 import { AuthModal } from './components/AuthModal';
 import { InstallAppPrompt } from './components/InstallAppPrompt';
+import { DebtAlertBanner } from './components/DebtAlertBanner';
+import { getDebtAlerts } from './utils/debtAlerts';
 import { getStoredTheme, applyTheme, ThemeId } from './utils/theme';
 
 export default function App() {
@@ -128,6 +130,9 @@ export default function App() {
   const [debts, setDebts] = useState<DebtItem[]>([]);
   const [isDebtListModalOpen, setIsDebtListModalOpen] = useState<boolean>(false);
   const [isAddDebtModalOpen, setIsAddDebtModalOpen] = useState<boolean>(false);
+  const [initialPayingDebt, setInitialPayingDebt] = useState<DebtItem | null>(null);
+
+  const debtAlerts = useMemo(() => getDebtAlerts(debts), [debts]);
 
   // Budget State
   const [budgets, setBudgets] = useState<BudgetItem[]>([]);
@@ -550,6 +555,10 @@ export default function App() {
           setQuickEntryWalletId(undefined);
           setIsTransactionModalOpen(true);
         }}
+        onOpenEditInitialBalance={() => {
+          setEditingInitialWallet(wallets[0] || null);
+          setIsEditInitialModalOpen(true);
+        }}
         onOpenWalletModal={() => setIsAddWalletModalOpen(true)}
         onOpenExportModal={() => setIsExportModalOpen(true)}
         onOpenCleanupModal={() => setIsCleanupModalOpen(true)}
@@ -559,7 +568,7 @@ export default function App() {
         onOpenProfileModal={() => setIsProfileModalOpen(true)}
         onOpenAuthModal={() => setIsAuthModalOpen(true)}
         onOpenInstallModal={() => setIsInstallModalOpen(true)}
-        activeDebtCount={debts.filter((d) => d.status === 'active').length}
+        activeDebtCount={debtAlerts.length || debts.filter((d) => d.status === 'active').length}
       />
 
       {/* Main Content Dashboard */}
@@ -573,6 +582,16 @@ export default function App() {
           selectedMonthLabel={selectedMonthLabel}
           onOpenBudgetModal={() => setIsBudgetListModalOpen(true)}
           onOpenDebtModal={() => setIsDebtListModalOpen(true)}
+        />
+
+        {/* Debt & EMI Reminders / Alerts Banner */}
+        <DebtAlertBanner
+          alerts={debtAlerts}
+          onOpenDebtModal={() => setIsDebtListModalOpen(true)}
+          onRecordPayment={(debt) => {
+            setInitialPayingDebt(debt);
+            setIsDebtListModalOpen(true);
+          }}
         />
 
         {/* Body Dashboard Quick Entry Bar */}
@@ -698,12 +717,16 @@ export default function App() {
 
       <DebtListModal
         isOpen={isDebtListModalOpen}
-        onClose={() => setIsDebtListModalOpen(false)}
+        onClose={() => {
+          setIsDebtListModalOpen(false);
+          setInitialPayingDebt(null);
+        }}
         debts={debts}
         wallets={wallets}
         onOpenAddModal={() => setIsAddDebtModalOpen(true)}
         onPayInstallment={handlePayDebtInstallment}
         onDeleteDebt={handleDeleteDebt}
+        initialPayingDebt={initialPayingDebt}
       />
 
       <AddDebtModal
@@ -740,6 +763,8 @@ export default function App() {
       <EditInitialBalanceModal
         isOpen={isEditInitialModalOpen}
         wallet={editingInitialWallet}
+        wallets={wallets}
+        onSelectWallet={(w) => setEditingInitialWallet(w)}
         onClose={() => {
           setIsEditInitialModalOpen(false);
           setEditingInitialWallet(null);
