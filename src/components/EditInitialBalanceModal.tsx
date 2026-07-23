@@ -5,8 +5,10 @@ import { X, DollarSign, Edit2, Wallet as WalletIcon, Check, Plus, Minus, Sparkle
 interface EditInitialBalanceModalProps {
   isOpen: boolean;
   wallet: Wallet | null;
+  wallets?: Wallet[];
   onClose: () => void;
   onSave: (walletId: string, newBalance: number) => Promise<void>;
+  onSelectWallet?: (wallet: Wallet) => void;
 }
 
 const PRESET_AMOUNTS = [0, 500, 1000, 5000, 10000, 25000, 50000, 100000];
@@ -14,21 +16,36 @@ const PRESET_AMOUNTS = [0, 500, 1000, 5000, 10000, 25000, 50000, 100000];
 export const EditInitialBalanceModal: React.FC<EditInitialBalanceModalProps> = ({
   isOpen,
   wallet,
+  wallets = [],
   onClose,
   onSave,
+  onSelectWallet,
 }) => {
+  const [selectedWalletId, setSelectedWalletId] = useState<string>('');
   const [balanceInput, setBalanceInput] = useState<string>('');
   const [isSaving, setIsSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
+  const activeWallet = (wallet || wallets.find((w) => w.id === selectedWalletId) || wallets[0]) || null;
+
   useEffect(() => {
-    if (wallet) {
-      setBalanceInput(wallet.initialBalance.toString());
+    if (activeWallet) {
+      setSelectedWalletId(activeWallet.id);
+      setBalanceInput(activeWallet.initialBalance.toString());
       setErrorMsg('');
     }
   }, [wallet, isOpen]);
 
-  if (!isOpen || !wallet) return null;
+  const handleWalletChange = (wId: string) => {
+    setSelectedWalletId(wId);
+    const target = wallets.find((w) => w.id === wId);
+    if (target) {
+      if (onSelectWallet) onSelectWallet(target);
+      setBalanceInput(target.initialBalance.toString());
+    }
+  };
+
+  if (!isOpen || !activeWallet) return null;
 
   const currentVal = parseFloat(balanceInput) || 0;
 
@@ -39,6 +56,7 @@ export const EditInitialBalanceModal: React.FC<EditInitialBalanceModalProps> = (
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!activeWallet) return;
     const num = parseFloat(balanceInput);
     if (isNaN(num) || num < 0) {
       setErrorMsg('Please enter a valid non-negative initial balance.');
@@ -47,7 +65,7 @@ export const EditInitialBalanceModal: React.FC<EditInitialBalanceModalProps> = (
 
     try {
       setIsSaving(true);
-      await onSave(wallet.id, num);
+      await onSave(activeWallet.id, num);
       setIsSaving(false);
       onClose();
     } catch (err: any) {
@@ -67,7 +85,7 @@ export const EditInitialBalanceModal: React.FC<EditInitialBalanceModalProps> = (
             <div className="flex items-center gap-3">
               <div 
                 className="w-10 h-10 rounded-2xl flex items-center justify-center text-white font-bold shrink-0 shadow-sm"
-                style={{ backgroundColor: wallet.color || '#10B981' }}
+                style={{ backgroundColor: activeWallet.color || '#10B981' }}
               >
                 <WalletIcon className="w-5 h-5" />
               </div>
@@ -76,7 +94,7 @@ export const EditInitialBalanceModal: React.FC<EditInitialBalanceModalProps> = (
                   <span>Edit Initial Balance</span>
                 </h2>
                 <p className="text-xs theme-text-muted">
-                  {wallet.name} ({wallet.type.replace('_', ' ')})
+                  {activeWallet.name} ({activeWallet.type.replace('_', ' ')})
                 </p>
               </div>
             </div>
@@ -96,12 +114,32 @@ export const EditInitialBalanceModal: React.FC<EditInitialBalanceModalProps> = (
               </div>
             )}
 
+            {/* Wallet Selector if multiple wallets exist */}
+            {wallets.length > 1 && (
+              <div>
+                <label className="block text-xs font-bold mb-1.5 theme-text-muted">
+                  Select Wallet to Edit
+                </label>
+                <select
+                  value={activeWallet.id}
+                  onChange={(e) => handleWalletChange(e.target.value)}
+                  className="w-full theme-input border rounded-xl py-2.5 px-3 text-xs font-semibold focus:outline-none focus:border-emerald-500"
+                >
+                  {wallets.map((w) => (
+                    <option key={w.id} value={w.id} className="bg-white dark:bg-slate-900">
+                      {w.name} ({w.type.replace('_', ' ')}) - Starting: ৳{w.initialBalance.toLocaleString()}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
             {/* Current Initial vs New Input Card */}
             <div className="p-4 theme-card border rounded-2xl space-y-3 bg-emerald-500/5 border-emerald-500/20">
               <div className="flex items-center justify-between text-xs theme-text-muted font-medium">
                 <span>Current Initial Starting Balance:</span>
                 <span className="font-mono font-bold text-slate-800 dark:text-slate-200">
-                  ৳{wallet.initialBalance.toLocaleString()}
+                  ৳{activeWallet.initialBalance.toLocaleString()}
                 </span>
               </div>
 
