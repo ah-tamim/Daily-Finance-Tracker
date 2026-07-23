@@ -16,7 +16,8 @@ import {
   Palette,
   CreditCard,
   PieChart,
-  Smartphone
+  Smartphone,
+  Edit2
 } from 'lucide-react';
 
 interface HeaderProps {
@@ -25,6 +26,7 @@ interface HeaderProps {
   availableMonths: string[];
   onMonthChange: (month: string) => void;
   onOpenTransactionModal: () => void;
+  onOpenEditInitialBalance?: () => void;
   onOpenWalletModal: () => void;
   onOpenExportModal: () => void;
   onOpenCleanupModal: () => void;
@@ -43,6 +45,7 @@ export const Header: React.FC<HeaderProps> = ({
   availableMonths,
   onMonthChange,
   onOpenTransactionModal,
+  onOpenEditInitialBalance,
   onOpenWalletModal,
   onOpenExportModal,
   onOpenCleanupModal,
@@ -161,6 +164,17 @@ export const Header: React.FC<HeaderProps> = ({
             <Plus className="w-3.5 h-3.5" />
             <span>Entry</span>
           </button>
+
+          {onOpenEditInitialBalance && (
+            <button
+              onClick={onOpenEditInitialBalance}
+              className="flex items-center gap-1 px-2.5 py-1 theme-subtle-btn rounded-lg text-xs font-medium border transition hover:border-emerald-500/40"
+              title="Add or Edit Initial / Starting Wallet Balance"
+            >
+              <Edit2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+              <span>Initial Balance</span>
+            </button>
+          )}
 
           <button
             onClick={onOpenWalletModal}
